@@ -1,4 +1,4 @@
-import { ApiResult, Area, CalendarBlock, CalendarBlockInput, DashboardSummary, DailyReview, FocusSession, Goal, GoalInput, Habit, HabitInput, Note, NoteInput, Project, ProjectInput, Tag, Task, TaskInput, TaskStatus, WeeklyReview, Trip, TripInput, TripDetails, ItineraryItem, Reservation, TravelDocument, TripChecklistItem, TripExpense } from "./types";
+import { ApiResult, Area, CalendarBlock, CalendarBlockInput, DashboardSummary, DailyReview, FocusSession, Goal, GoalInput, Habit, HabitInput, Note, NoteInput, Project, ProjectInput, WorkspaceTemplate, Tag, Task, TaskInput, TaskStatus, WeeklyReview, Trip, TripInput, TripDetails, ItineraryItem, Reservation, TravelDocument, TripChecklistItem, TripExpense, TodayHub, SearchResponse, TimelineItem, WorkspaceInsights, CompactNote, IntelligenceOverview, WorkspaceHealth, WorkspaceDetail, WorkspaceChecklistItem, WorkspaceAttachment } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081/api/v1";
 
@@ -13,6 +13,18 @@ const result = <T>(promise: Promise<T>): Promise<ApiResult<T>> => promise.then((
 const json = { "Content-Type": "application/json" };
 
 export const lifeosApi = {
+
+  intelligenceOverview: () => result(fetch(`${API_URL}/intelligence/overview`, { cache: "no-store" }).then((r) => parse<IntelligenceOverview>(r))),
+  workspaceHealth: (id: string) => result(fetch(`${API_URL}/intelligence/workspaces/${id}/health`, { cache: "no-store" }).then((r) => parse<WorkspaceHealth>(r))),
+
+  todayHub: () => result(fetch(`${API_URL}/today`, { cache: "no-store" }).then((r) => parse<TodayHub>(r))),
+  search: (query: string) => result(fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, { cache: "no-store" }).then((r) => parse<SearchResponse>(r))),
+  workspaceTimeline: (id: string) => result(fetch(`${API_URL}/workspaces/${id}/timeline`, { cache: "no-store" }).then((r) => parse<TimelineItem[]>(r))),
+  workspaceInsights: (id: string) => result(fetch(`${API_URL}/workspaces/${id}/insights`, { cache: "no-store" }).then((r) => parse<WorkspaceInsights>(r))),
+  noteBacklinks: (id: string) => result(fetch(`${API_URL}/notes/${id}/backlinks`, { cache: "no-store" }).then((r) => parse<CompactNote[]>(r))),
+  noteLinks: (id: string) => result(fetch(`${API_URL}/notes/${id}/links`, { cache: "no-store" }).then((r) => parse<CompactNote[]>(r))),
+  linkNote: (id: string, targetNoteId: string) => result(fetch(`${API_URL}/notes/${id}/links`, { method: "POST", headers: json, body: JSON.stringify({ targetNoteId }) }).then((r) => parse<CompactNote>(r))),
+  unlinkNote: (id: string, targetId: string) => fetch(`${API_URL}/notes/${id}/links/${targetId}`, { method: "DELETE" }).then((r) => parse<void>(r)),
 
   trips: () => result(fetch(`${API_URL}/trips`, { cache: "no-store" }).then((r) => parse<Trip[]>(r))),
   trip: (id: string) => result(fetch(`${API_URL}/trips/${id}`, { cache: "no-store" }).then((r) => parse<TripDetails>(r))),
@@ -34,16 +46,17 @@ export const lifeosApi = {
   deleteTripExpense: (tripId:string,id:string) => fetch(`${API_URL}/trips/${tripId}/expenses/${id}`,{method:"DELETE"}).then(r=>parse<void>(r)),
   dashboard: () => result(fetch(`${API_URL}/dashboard`, { cache: "no-store" }).then((r) => parse<DashboardSummary>(r))),
   tasks: () => result(fetch(`${API_URL}/tasks`, { cache: "no-store" }).then((r) => parse<Task[]>(r))),
-  projects: () => result(fetch(`${API_URL}/projects`, { cache: "no-store" }).then((r) => parse<Project[]>(r))),
+  projects: () => result(fetch(`${API_URL}/workspaces`, { cache: "no-store" }).then((r) => parse<Project[]>(r))),
+  workspaceTemplates: () => result(fetch(`${API_URL}/workspace-templates`, { cache: "no-store" }).then((r) => parse<WorkspaceTemplate[]>(r))),
   habits: () => result(fetch(`${API_URL}/habits`, { cache: "no-store" }).then((r) => parse<Habit[]>(r))),
   goals: () => result(fetch(`${API_URL}/goals`, { cache: "no-store" }).then((r) => parse<Goal[]>(r))),
   createTask: (input: TaskInput) => result(fetch(`${API_URL}/tasks`, { method: "POST", headers: json, body: JSON.stringify(input) }).then((r) => parse<Task>(r))),
   updateTask: (id: string, input: TaskInput) => result(fetch(`${API_URL}/tasks/${id}`, { method: "PUT", headers: json, body: JSON.stringify(input) }).then((r) => parse<Task>(r))),
   updateTaskStatus: (id: string, status: TaskStatus) => fetch(`${API_URL}/tasks/${id}/status`, { method: "PATCH", headers: json, body: JSON.stringify({ status }) }).then((r) => parse<Task>(r)),
   deleteTask: (id: string) => fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),
-  createProject: (input: ProjectInput) => result(fetch(`${API_URL}/projects`, { method: "POST", headers: json, body: JSON.stringify(input) }).then((r) => parse<Project>(r))),
-  updateProject: (id: string, input: ProjectInput) => result(fetch(`${API_URL}/projects/${id}`, { method: "PUT", headers: json, body: JSON.stringify(input) }).then((r) => parse<Project>(r))),
-  deleteProject: (id: string) => fetch(`${API_URL}/projects/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),
+  createProject: (input: ProjectInput, templateCode?: string) => result(fetch(templateCode ? `${API_URL}/workspaces/from-template/${templateCode}` : `${API_URL}/workspaces`, { method: "POST", headers: json, body: JSON.stringify({ ...input, dueDate: input.dueDate ?? input.deadline }) }).then((r) => parse<Project>(r))),
+  updateProject: (id: string, input: ProjectInput) => result(fetch(`${API_URL}/workspaces/${id}`, { method: "PUT", headers: json, body: JSON.stringify({ ...input, dueDate: input.dueDate ?? input.deadline }) }).then((r) => parse<Project>(r))),
+  deleteProject: (id: string) => fetch(`${API_URL}/workspaces/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),
   createHabit: (input: HabitInput) => result(fetch(`${API_URL}/habits`, { method: "POST", headers: json, body: JSON.stringify(input) }).then((r) => parse<Habit>(r))),
   updateHabit: (id: string, input: HabitInput) => result(fetch(`${API_URL}/habits/${id}`, { method: "PUT", headers: json, body: JSON.stringify(input) }).then((r) => parse<Habit>(r))),
   deleteHabit: (id: string) => fetch(`${API_URL}/habits/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),
@@ -73,4 +86,10 @@ export const lifeosApi = {
   areas: () => result(fetch(`${API_URL}/areas`, { cache: "no-store" }).then((r) => parse<Area[]>(r))),
   createArea: (name: string) => result(fetch(`${API_URL}/areas`, { method: "POST", headers: json, body: JSON.stringify({ name }) }).then((r) => parse<Area>(r))),
   tags: () => result(fetch(`${API_URL}/tags`, { cache: "no-store" }).then((r) => parse<Tag[]>(r))),
+  workspaceDetail: (id: string) => result(fetch(`${API_URL}/workspaces/${id}/detail`, { cache: "no-store" }).then((r) => parse<WorkspaceDetail>(r))),
+  addWorkspaceChecklist: (workspaceId: string, title: string, position = 0) => result(fetch(`${API_URL}/workspaces/${workspaceId}/checklist`, { method: "POST", headers: json, body: JSON.stringify({ title, position }) }).then((r) => parse<WorkspaceChecklistItem>(r))),
+  toggleWorkspaceChecklist: (workspaceId: string, id: string) => result(fetch(`${API_URL}/workspaces/${workspaceId}/checklist/${id}/toggle`, { method: "PATCH" }).then((r) => parse<WorkspaceChecklistItem>(r))),
+  deleteWorkspaceChecklist: (workspaceId: string, id: string) => fetch(`${API_URL}/workspaces/${workspaceId}/checklist/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),
+  addWorkspaceAttachment: (workspaceId: string, input: { name:string; url:string; contentType?:string|null; sizeBytes?:number|null }) => result(fetch(`${API_URL}/workspaces/${workspaceId}/attachments`, { method: "POST", headers: json, body: JSON.stringify(input) }).then((r) => parse<WorkspaceAttachment>(r))),
+  deleteWorkspaceAttachment: (workspaceId: string, id: string) => fetch(`${API_URL}/workspaces/${workspaceId}/attachments/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),
 };

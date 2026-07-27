@@ -1,6 +1,6 @@
 package com.joaomendonca.lifeos.brain;
 
-import com.joaomendonca.lifeos.project.ProjectEntity;
+import com.joaomendonca.lifeos.workspace.WorkspaceEntity;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -14,7 +14,7 @@ public class NoteEntity {
   @Column(nullable = false, length = 220) private String title;
   @Column(nullable = false, columnDefinition = "text") private String content = "";
   @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "area_id") private AreaEntity area;
-  @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "project_id") private ProjectEntity project;
+  @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "workspace_id") private WorkspaceEntity workspace;
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(name = "note_tags", joinColumns = @JoinColumn(name = "note_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
   private Set<TagEntity> tags = new LinkedHashSet<>();
