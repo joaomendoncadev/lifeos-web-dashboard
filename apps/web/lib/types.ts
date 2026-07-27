@@ -23,6 +23,8 @@ export type TaskInput = {
   dueDate?: string | null;
 };
 
+export type WorkspaceType = "PROJECT" | "TRAVEL" | "HEALTH" | "FINANCE" | "STUDY" | "CAREER" | "PERSONAL" | "BLANK";
+
 export type Project = {
   id: string;
   name: string;
@@ -33,6 +35,15 @@ export type Project = {
   deadlineDate?: string | null;
   tasks: number;
   icon: string;
+  type?: WorkspaceType;
+  color?: string;
+  status?: string;
+  startDate?: string | null;
+  metadata?: string;
+};
+
+export type WorkspaceTemplate = {
+  id: string; code: string; name: string; description: string; type: WorkspaceType; icon: string; color: string; defaultMetadata: string;
 };
 
 export type ProjectInput = {
@@ -40,7 +51,13 @@ export type ProjectInput = {
   area?: string;
   description?: string;
   deadline?: string | null;
+  dueDate?: string | null;
+  startDate?: string | null;
   icon?: string;
+  type?: WorkspaceType;
+  color?: string;
+  status?: string;
+  metadata?: string;
 };
 
 export type HabitInput = {
@@ -188,3 +205,36 @@ export type TravelDocument = { id:string; tripId:string; name:string; documentTy
 export type TripChecklistItem = { id:string; tripId:string; title:string; category:string; completed:boolean };
 export type TripExpense = { id:string; tripId:string; description:string; category:string; amount:number; expenseDate:string; paid:boolean };
 export type TripDetails = { trip:Trip; itinerary:ItineraryItem[]; reservations:Reservation[]; documents:TravelDocument[]; checklist:TripChecklistItem[]; expenses:TripExpense[] };
+
+export type CompactTask = { id:string; title:string; workspaceId?:string|null; workspace:string; priority:string; dueDate?:string|null; status:string };
+export type CompactNote = { id:string; title:string; workspaceId?:string|null; workspace:string; excerpt:string; updatedAt:string };
+export type CompactWorkspace = { id:string; name:string; type:string; icon:string; progress:number; openTasks:number; overdueTasks:number };
+export type TodayHub = { date:string; overdueCount:number; dueTodayCount:number; focusMinutes:number; overdue:CompactTask[]; tasks:CompactTask[]; agenda:Array<{id:string;title:string;startAt:string;endAt:string;type:string;completed:boolean}>; habits:Array<{id:string;name:string;icon:string;frequency:string}>; workspaces:CompactWorkspace[]; notes:CompactNote[] };
+export type SearchItem = { id:string; type:"WORKSPACE"|"TASK"|"NOTE"|string; title:string; subtitle:string; href:string };
+export type SearchResponse = { query:string; results:SearchItem[] };
+export type TimelineItem = { id:string; entityType:string; action:string; description:string; createdAt:string };
+export type WorkspaceInsights = { totalTasks:number; completedTasks:number; openTasks:number; overdueTasks:number; progress:number; focusMinutes:number; notes:number; activityLast7Days:number };
+
+export type IntelligenceDailyPoint = { date:string; completedTasks:number; focusMinutes:number; habitsDone:number };
+export type WorkspaceHealth = { id:string; name:string; status:"HEALTHY"|"AT_RISK"|"STALLED"; score:number; progress:number; openTasks:number; overdueTasks:number; activityLast14Days:number; reason:string };
+export type IntelligenceRecommendation = { id:string; severity:"HIGH"|"MEDIUM"|"LOW"; title:string; description:string; actionLabel:string; href:string };
+export type AgendaSuggestion = { id:string; title:string; reason:string; durationMinutes:number; preferredPeriod:string; taskId:string; workspace:string };
+export type GoalSignal = { id:string; title:string; currentProgress:number; suggestedProgress:number; reason:string };
+export type HabitSignal = { label:string; value:number; interpretation:string };
+export type IntelligenceOverview = {
+  generatedAt:string; completedLast7Days:number; completedPrevious7Days:number; focusMinutesLast7Days:number;
+  productiveDays:number; activeWorkspaces:number; workspacesAtRisk:number; habitCompletionRate:number;
+  trend:IntelligenceDailyPoint[]; workspaceHealth:WorkspaceHealth[]; recommendations:IntelligenceRecommendation[];
+  agendaSuggestions:AgendaSuggestion[]; goalSignals:GoalSignal[]; habitSignals:HabitSignal[];
+};
+
+export type WorkspaceTaskItem = { id:string; title:string; status:TaskStatus; priority:string; context:string; durationMinutes:number; dueDate?:string|null };
+export type WorkspaceNoteItem = { id:string; title:string; content:string; favorite:boolean; updatedAt:string };
+export type WorkspaceEventItem = { id:string; action:string; description:string; entityType:string; createdAt:string };
+export type WorkspaceChecklistItem = { id:string; title:string; completed:boolean; position:number };
+export type WorkspaceAttachment = { id:string; name:string; url:string; contentType?:string|null; sizeBytes?:number|null; createdAt:string };
+export type WorkspaceDetail = {
+ id:string; name:string; description:string; area:string; type:WorkspaceType; icon:string; color:string; status:string;
+ startDate?:string|null; dueDate?:string|null; progress:number; tasks:WorkspaceTaskItem[]; notes:WorkspaceNoteItem[];
+ timeline:WorkspaceEventItem[]; checklist:WorkspaceChecklistItem[]; attachments:WorkspaceAttachment[];
+};

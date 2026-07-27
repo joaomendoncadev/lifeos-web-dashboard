@@ -5,6 +5,8 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { lifeosApi } from "@/lib/api";
 import { Area, Note, NoteInput, Project } from "@/lib/types";
 import { SyncState } from "./sync-state";
+import { ConfirmDialog } from "./confirm-dialog";
+import { useToast } from "./toast-provider";
 
 const empty: NoteInput = { title: "", content: "", areaId: null, projectId: null, tags: [], favorite: false, archived: false };
 
@@ -34,6 +36,9 @@ export function BrainView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
+  const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { notify } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true); setError(undefined);
@@ -60,12 +65,14 @@ export function BrainView() {
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!form.title?.trim()) { setMessage("Informe um título."); return; }
+    if (!form.title?.trim()) { notify("Informe um título.", "error"); return; }
+    setSaving(true);
     try {
       const result = selected ? await lifeosApi.updateNote(selected, form) : await lifeosApi.createNote(form);
       setNotes((items) => selected ? items.map((item) => item.id === selected ? result.data : item) : [result.data, ...items]);
-      setSelected(result.data.id); setMessage("Nota salva.");
-    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Falha ao salvar a nota."); }
+      setSelected(result.data.id); setMessage("Nota salva."); notify("Nota salva.");
+    } catch (reason) { notify(reason instanceof Error ? reason.message : "Falha ao salvar a nota.", "error"); }
+    finally { setSaving(false); }
   }
 
   async function toggleFavorite(note: Note) {
@@ -78,13 +85,16 @@ export function BrainView() {
     catch (reason) { setMessage(reason instanceof Error ? reason.message : "Falha ao arquivar."); }
   }
 
-  async function remove(note: Note) {
-    if (!confirm("Excluir esta nota definitivamente?")) return;
-    try { await lifeosApi.deleteNote(note.id); setNotes((items) => items.filter((item) => item.id !== note.id)); if (selected === note.id) createNew(); }
-    catch (reason) { setMessage(reason instanceof Error ? reason.message : "Falha ao excluir."); }
+  async function remove() {
+    if (!deleteTarget) return;
+    setSaving(true);
+    try { await lifeosApi.deleteNote(deleteTarget.id); setNotes((items) => items.filter((item) => item.id !== deleteTarget.id)); if (selected === deleteTarget.id) createNew(); setDeleteTarget(null); notify("Nota excluída."); }
+    catch (reason) { notify(reason instanceof Error ? reason.message : "Falha ao excluir.", "error"); }
+    finally { setSaving(false); }
   }
 
-  return <section className="brain-layout panel">
+  return <>
+  <section className="brain-layout panel">
     <aside className="brain-list">
       <div className="brain-toolbar">
         <button className="primary-button" onClick={createNew}><Plus size={16}/>Nova nota</button>
@@ -105,7 +115,7 @@ export function BrainView() {
     <form className="brain-editor" onSubmit={save}>
       <div className="brain-editor-actions">
         <div className="segmented"><button type="button" className={!preview ? "active" : ""} onClick={() => setPreview(false)}>Editar</button><button type="button" className={preview ? "active" : ""} onClick={() => setPreview(true)}>Visualizar</button></div>
-        {current ? <div className="row-actions"><button type="button" className="icon-button" title="Favoritar" onClick={() => void toggleFavorite(current)}><Star size={17} fill={current.favorite ? "currentColor" : "none"}/></button><button type="button" className="icon-button" title={current.archived ? "Restaurar" : "Arquivar"} onClick={() => void archive(current)}>{current.archived ? <ArchiveRestore size={17}/> : <Archive size={17}/>}</button><button type="button" className="icon-button danger-icon" title="Excluir" onClick={() => void remove(current)}><Trash2 size={17}/></button></div> : null}
+        {current ? <div className="row-actions"><button type="button" className="icon-button" title="Favoritar" onClick={() => void toggleFavorite(current)}><Star size={17} fill={current.favorite ? "currentColor" : "none"}/></button><button type="button" className="icon-button" title={current.archived ? "Restaurar" : "Arquivar"} onClick={() => void archive(current)}>{current.archived ? <ArchiveRestore size={17}/> : <Archive size={17}/>}</button><button type="button" className="icon-button danger-icon" title="Excluir" onClick={() => setDeleteTarget(current)}><Trash2 size={17}/></button></div> : null}
       </div>
       <input className="brain-title" value={form.title ?? ""} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Título da nota"/>
       <div className="brain-meta">
@@ -114,7 +124,9 @@ export function BrainView() {
         <input value={(form.tags ?? []).join(", ")} onChange={(event) => setForm({ ...form, tags: event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} placeholder="tags, separadas, por vírgula"/>
       </div>
       {preview ? <article className="markdown-preview">{markdownPreview(form.content ?? "")}</article> : <textarea className="brain-content" value={form.content ?? ""} onChange={(event) => setForm({ ...form, content: event.target.value })} placeholder="# Comece a escrever...\n\nUse Markdown para organizar suas ideias."/>}
-      <footer className="brain-footer"><span>{message}</span><button className="primary-button" type="submit">Salvar nota</button></footer>
+      <footer className="brain-footer"><span>{message}</span><button className="primary-button" type="submit" disabled={saving}>{saving ? "Salvando…" : "Salvar nota"}</button></footer>
     </form>
-  </section>;
+  </section>
+  <ConfirmDialog open={Boolean(deleteTarget)} title="Excluir nota definitivamente?" description={`“${deleteTarget?.title ?? ""}” e seu conteúdo serão removidos permanentemente.`} onCancel={() => setDeleteTarget(null)} onConfirm={() => void remove()} busy={saving}/>
+  </>;
 }

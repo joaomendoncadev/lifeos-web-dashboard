@@ -2,7 +2,7 @@ package com.joaomendonca.lifeos.dashboard;
 
 import com.joaomendonca.lifeos.habit.*;
 import com.joaomendonca.lifeos.focus.FocusSessionRepository;
-import com.joaomendonca.lifeos.project.ProjectRepository;
+import com.joaomendonca.lifeos.workspace.WorkspaceRepository;
 import com.joaomendonca.lifeos.task.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/dashboard")
 public class DashboardController {
   private final TaskRepository tasks;
-  private final ProjectRepository projects;
+  private final WorkspaceRepository workspaces;
   private final HabitRepository habits;
   private final HabitLogRepository logs;
   private final FocusSessionRepository focusSessions;
 
-  public DashboardController(TaskRepository tasks, ProjectRepository projects, HabitRepository habits, HabitLogRepository logs, FocusSessionRepository focusSessions) {
-    this.tasks = tasks; this.projects = projects; this.habits = habits; this.logs = logs; this.focusSessions = focusSessions;
+  public DashboardController(TaskRepository tasks, WorkspaceRepository workspaces, HabitRepository habits, HabitLogRepository logs, FocusSessionRepository focusSessions) {
+    this.tasks = tasks; this.workspaces = workspaces; this.habits = habits; this.logs = logs; this.focusSessions = focusSessions;
   }
 
   record DashboardResponse(long openTasks, long completedTasks, long activeProjects, long habitsDone,
@@ -44,7 +44,7 @@ public class DashboardController {
     var end = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
     int focused = focusSessions.findByStartedAtBetween(start, end).stream().filter(f -> Boolean.TRUE.equals(f.getCompleted())).mapToInt(f -> f.getActualMinutes()).sum();
     return new DashboardResponse(tasks.countByStatusNot(TaskStatus.DONE), tasks.countByStatus(TaskStatus.DONE),
-        projects.count(), habitDone, habitTotal, planned, overdue, dueToday, focused, priorities);
+        workspaces.countByArchivedFalse(), habitDone, habitTotal, planned, overdue, dueToday, focused, priorities);
   }
 
   private int priorityWeight(String priority) {

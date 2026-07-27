@@ -1,6 +1,6 @@
 package com.joaomendonca.lifeos.brain;
 
-import com.joaomendonca.lifeos.project.ProjectRepository;
+import com.joaomendonca.lifeos.workspace.WorkspaceRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,13 +16,13 @@ public class SecondBrainController {
   private final NoteRepository notes;
   private final AreaRepository areas;
   private final TagRepository tags;
-  private final ProjectRepository projects;
+  private final WorkspaceRepository workspaces;
 
-  public SecondBrainController(NoteRepository notes, AreaRepository areas, TagRepository tags, ProjectRepository projects) {
+  public SecondBrainController(NoteRepository notes, AreaRepository areas, TagRepository tags, WorkspaceRepository workspaces) {
     this.notes = notes;
     this.areas = areas;
     this.tags = tags;
-    this.projects = projects;
+    this.workspaces = workspaces;
   }
 
   public record AreaResponse(String id, String name, String icon) {}
@@ -129,8 +129,8 @@ public class SecondBrainController {
     note.setContent(Optional.ofNullable(request.content()).orElse(""));
     note.setArea(request.areaId() == null ? null : areas.findById(request.areaId())
         .orElseThrow(() -> new IllegalArgumentException("Área não encontrada.")));
-    note.setProject(request.projectId() == null ? null : projects.findById(request.projectId())
-        .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado.")));
+    note.setWorkspace(request.projectId() == null ? null : workspaces.findById(request.projectId())
+        .orElseThrow(() -> new IllegalArgumentException("Workspace não encontrado.")));
     note.setFavorite(Boolean.TRUE.equals(request.favorite()));
     note.setArchived(Boolean.TRUE.equals(request.archived()));
     note.setTags(resolveTags(request.tags()));
@@ -151,8 +151,8 @@ public class SecondBrainController {
   private NoteResponse map(NoteEntity note) {
     return new NoteResponse(
         note.getId().toString(), note.getTitle(), note.getContent(), note.getArea() == null ? null : map(note.getArea()),
-        note.getProject() == null ? null : note.getProject().getId().toString(),
-        note.getProject() == null ? null : note.getProject().getName(),
+        note.getWorkspace() == null ? null : note.getWorkspace().getId().toString(),
+        note.getWorkspace() == null ? null : note.getWorkspace().getName(),
         note.getTags().stream().sorted(Comparator.comparing(TagEntity::getName)).map(this::map).toList(),
         Boolean.TRUE.equals(note.getFavorite()), Boolean.TRUE.equals(note.getArchived()), note.getCreatedAt(), note.getUpdatedAt());
   }

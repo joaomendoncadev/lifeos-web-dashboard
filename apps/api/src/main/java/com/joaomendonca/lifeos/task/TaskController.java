@@ -1,6 +1,8 @@
 package com.joaomendonca.lifeos.task;
 
-import com.joaomendonca.lifeos.project.ProjectRepository;
+import com.joaomendonca.lifeos.workspace.WorkspaceRepository;
+import com.joaomendonca.lifeos.workspace.ActivityEventEntity;
+import com.joaomendonca.lifeos.workspace.ActivityEventRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
@@ -13,11 +15,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/tasks")
 public class TaskController {
   private final TaskRepository tasks;
-  private final ProjectRepository projects;
+  private final WorkspaceRepository workspaces;
+  private final ActivityEventRepository events;
 
-  public TaskController(TaskRepository tasks, ProjectRepository projects) {
+  public TaskController(TaskRepository tasks, WorkspaceRepository workspaces, ActivityEventRepository events) {
     this.tasks = tasks;
-    this.projects = projects;
+    this.workspaces = workspaces;
+    this.events = events;
   }
 
   record TaskRequest(
@@ -44,7 +48,9 @@ public class TaskController {
   TaskResponse create(@Valid @RequestBody TaskRequest request) {
     var entity = new TaskEntity();
     apply(entity, request);
-    return map(tasks.save(entity));
+    entity = tasks.save(entity);
+    record(entity, "TASK_CREATED", "Tarefa criada: " + entity.getTitle());
+    return map(entity);
   }
 
   @PutMapping("/{id}")
@@ -52,7 +58,9 @@ public class TaskController {
   TaskResponse update(@PathVariable UUID id, @Valid @RequestBody TaskRequest request) {
     var entity = find(id);
     apply(entity, request);
-    return map(tasks.save(entity));
+    entity = tasks.save(entity);
+    record(entity, "TASK_UPDATED", "Tarefa atualizada: " + entity.getTitle());
+    return map(entity);
   }
 
   @PatchMapping("/{id}/status")
@@ -60,7 +68,9 @@ public class TaskController {
   TaskResponse status(@PathVariable UUID id, @Valid @RequestBody UpdateStatusRequest request) {
     var entity = find(id);
     entity.setStatus(TaskStatus.fromLabel(request.status()));
-    return map(tasks.save(entity));
+    entity = tasks.save(entity);
+    record(entity, entity.getStatus() == TaskStatus.DONE ? "TASK_COMPLETED" : "TASK_STATUS_CHANGED", "Status alterado para " + entity.getStatus().label + ": " + entity.getTitle());
+    return map(entity);
   }
 
   @DeleteMapping("/{id}")
@@ -76,12 +86,23 @@ public class TaskController {
   private void apply(TaskEntity entity, TaskRequest request) {
     entity.setTitle(request.title().trim());
     entity.setStatus(request.status() == null || request.status().isBlank() ? TaskStatus.INBOX : TaskStatus.fromLabel(request.status()));
-    entity.setProject(request.projectId() == null ? null : projects.findById(request.projectId())
-        .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado.")));
+    entity.setWorkspace(request.projectId() == null ? null : workspaces.findById(request.projectId())
+        .orElseThrow(() -> new IllegalArgumentException("Workspace não encontrado.")));
     entity.setContext(defaultText(request.context(), "Pessoal"));
     entity.setDurationMinutes(request.durationMinutes() == null ? 30 : request.durationMinutes());
     entity.setPriority(defaultText(request.priority(), "Média"));
     entity.setDueDate(request.dueDate());
+  }
+
+  private void record(TaskEntity task, String action, String description) {
+    if (task.getWorkspace() == null) return;
+    var event = new ActivityEventEntity();
+    event.setWorkspace(task.getWorkspace());
+    event.setEntityType("TASK");
+    event.setEntityId(task.getId());
+    event.setAction(action);
+    event.setDescription(description);
+    events.save(event);
   }
 
   private String defaultText(String value, String fallback) {
@@ -89,7 +110,7 @@ public class TaskController {
   }
 
   private TaskResponse map(TaskEntity entity) {
-    var project = entity.getProject();
+    var project = entity.getWorkspace();
     return new TaskResponse(
         entity.getId().toString(), entity.getTitle(), project == null ? null : project.getId().toString(),
         project == null ? "Inbox" : project.getName(), entity.getContext(), entity.getDurationMinutes() + " min",

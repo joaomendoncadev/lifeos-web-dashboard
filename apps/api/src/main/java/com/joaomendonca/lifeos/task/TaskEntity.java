@@ -1,6 +1,6 @@
 package com.joaomendonca.lifeos.task;
 
-import com.joaomendonca.lifeos.project.ProjectEntity;
+import com.joaomendonca.lifeos.workspace.WorkspaceEntity;
 import jakarta.persistence.*;
 import java.time.*;
 import java.util.UUID;
@@ -17,8 +17,8 @@ public class TaskEntity {
   @Enumerated(EnumType.STRING) @Column(nullable = false)
   private TaskStatus status = TaskStatus.INBOX;
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "project_id")
-  private ProjectEntity project;
+  @JoinColumn(name = "workspace_id")
+  private WorkspaceEntity workspace;
   @Column(name = "project_name")
   private String projectName = "Inbox";
   private String context = "Pessoal";
@@ -33,6 +33,6 @@ public class TaskEntity {
   @PrePersist @PreUpdate
   void sync() {
     updatedAt = Instant.now();
-    projectName = project == null ? "Inbox" : project.getName();
+    projectName = workspace == null ? "Inbox" : workspace.getName();
   }
 }
