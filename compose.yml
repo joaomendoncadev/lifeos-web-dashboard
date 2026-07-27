@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: docker.io/postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lifeos}
+      POSTGRES_USER: ${POSTGRES_USER:-lifeos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lifeos}
+    ports: ["5432:5432"]
+    volumes: ["lifeos_postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  api:
+    build: { context: ./apps/api, dockerfile: Containerfile }
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lifeos}
+      DATABASE_USER: ${POSTGRES_USER:-lifeos}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-lifeos}
+      CORS_ALLOWED_ORIGIN: http://localhost:3000
+    ports: ["${API_PORT:-8081}:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Containerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://localhost:${API_PORT:-8081}/api/v1"
+    ports: ["3000:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+volumes:
+  lifeos_postgres_data:

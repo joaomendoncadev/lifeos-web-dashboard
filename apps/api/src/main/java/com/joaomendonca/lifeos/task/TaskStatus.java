@@ -1,0 +1,2 @@
+package com.joaomendonca.lifeos.task;
+public enum TaskStatus { INBOX("Inbox"), NEXT("Próxima"), IN_PROGRESS("Em andamento"), DONE("Concluída"); public final String label; TaskStatus(String label){this.label=label;} public static TaskStatus fromLabel(String value){ for(var s:values()) if(s.label.equalsIgnoreCase(value)||s.name().equalsIgnoreCase(value)) return s; throw new IllegalArgumentException("Status inválido: "+value); } }
