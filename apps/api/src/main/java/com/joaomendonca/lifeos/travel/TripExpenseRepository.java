@@ -1,0 +1,2 @@
+package com.joaomendonca.lifeos.travel; import java.math.BigDecimal; import java.util.*; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param;
+public interface TripExpenseRepository extends JpaRepository<TripExpenseEntity,UUID>{ List<TripExpenseEntity> findByTripIdOrderByExpenseDateDesc(UUID tripId); @Query("select coalesce(sum(e.amount),0) from TripExpenseEntity e where e.tripId=:tripId") BigDecimal totalByTripId(@Param("tripId") UUID tripId); }

@@ -1,0 +1,5 @@
+CREATE TABLE projects (id UUID PRIMARY KEY, name VARCHAR(160) NOT NULL, area VARCHAR(100), description TEXT, progress INTEGER NOT NULL DEFAULT 0 CHECK(progress BETWEEN 0 AND 100), deadline DATE, task_count INTEGER NOT NULL DEFAULT 0, icon VARCHAR(60));
+CREATE TABLE tasks (id UUID PRIMARY KEY, title VARCHAR(240) NOT NULL, status VARCHAR(40) NOT NULL, project_name VARCHAR(160), context VARCHAR(80), duration_minutes INTEGER, priority VARCHAR(30), due_date DATE, created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL);
+CREATE INDEX idx_tasks_status ON tasks(status); CREATE INDEX idx_tasks_due_date ON tasks(due_date);
+CREATE TABLE habits (id UUID PRIMARY KEY, name VARCHAR(140) NOT NULL, description VARCHAR(300), frequency VARCHAR(60), streak INTEGER NOT NULL DEFAULT 0, icon VARCHAR(60), active BOOLEAN NOT NULL DEFAULT TRUE);
+CREATE TABLE habit_logs (id UUID PRIMARY KEY, habit_id UUID NOT NULL REFERENCES habits(id) ON DELETE CASCADE, log_date DATE NOT NULL, done BOOLEAN NOT NULL DEFAULT FALSE, CONSTRAINT uk_habit_log UNIQUE(habit_id,log_date));

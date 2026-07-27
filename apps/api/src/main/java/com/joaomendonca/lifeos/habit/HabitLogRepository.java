@@ -1,0 +1,1 @@
+package com.joaomendonca.lifeos.habit; import java.time.LocalDate; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface HabitLogRepository extends JpaRepository<HabitLogEntity,UUID>{Optional<HabitLogEntity> findByHabitIdAndDate(UUID habitId,LocalDate date);Set<HabitLogEntity> findByDate(LocalDate date);}

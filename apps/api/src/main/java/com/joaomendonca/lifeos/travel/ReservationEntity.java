@@ -1,0 +1,4 @@
+package com.joaomendonca.lifeos.travel;
+import jakarta.persistence.*; import java.math.BigDecimal; import java.time.OffsetDateTime; import java.util.UUID; import lombok.*;
+@Entity @Table(name="trip_reservations") @Getter @Setter @NoArgsConstructor
+public class ReservationEntity { @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id; @Column(nullable=false) private UUID tripId; @Column(nullable=false,length=40) private String reservationType; @Column(nullable=false,length=160) private String provider; @Column(nullable=false,length=100) private String confirmationCode=""; private OffsetDateTime startAt; private OffsetDateTime endAt; @Column(nullable=false,precision=14,scale=2) private BigDecimal amount=BigDecimal.ZERO; @Column(nullable=false,columnDefinition="text") private String notes=""; }
