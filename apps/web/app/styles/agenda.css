@@ -27,9 +27,12 @@
 .timeline-block:active{cursor:grabbing}
 .timeline-block.completed{opacity:.55}
 .timeline-block.completed strong{text-decoration:line-through}
-.timeline-block-head{display:flex;align-items:center;gap:4px;color:var(--muted)}
+.timeline-block-head{display:flex;align-items:center;gap:5px;color:var(--muted)}
 .timeline-block-head svg{opacity:.6;flex:none}
 .timeline-block-head span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-check{flex:none;width:14px;height:14px;border-radius:4px;border:1px solid var(--muted);background:var(--surface-strong);display:grid;place-items:center;color:#fff;padding:0;cursor:pointer}
+.timeline-check.checked{background:var(--accent);border-color:var(--accent)}
+.timeline-check:hover{border-color:var(--accent)}
 .timeline-block strong{font-size:11px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .timeline-block small{display:flex;align-items:center;gap:3px;color:var(--muted);font-size:10px}
 .timeline-block footer{margin-top:auto;display:flex;justify-content:flex-end;gap:2px}

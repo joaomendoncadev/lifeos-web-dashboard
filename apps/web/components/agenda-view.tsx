@@ -53,9 +53,9 @@ function layoutDay(dayBlocks: CalendarBlock[]): Positioned[] {
 }
 
 type DragPayload = { kind: "block" | "task"; id: string };
-type BlockForm = { title: string; description: string; blockType: CalendarBlockType; domain: CalendarBlockDomain; startAt: string; endAt: string };
+type BlockForm = { title: string; description: string; blockType: CalendarBlockType; domain: CalendarBlockDomain; startAt: string; endAt: string; completed: boolean };
 
-const emptyForm: BlockForm = { title: "", description: "", blockType: "FOCUS", domain: "PESSOAL", startAt: isoLocal(new Date(Date.now()+3600000)), endAt: isoLocal(new Date(Date.now()+7200000)) };
+const emptyForm: BlockForm = { title: "", description: "", blockType: "FOCUS", domain: "PESSOAL", startAt: isoLocal(new Date(Date.now()+3600000)), endAt: isoLocal(new Date(Date.now()+7200000)), completed: false };
 
 export function AgendaView(){
   const [anchor,setAnchor]=useState(()=>startOfWeek(new Date()));
@@ -107,7 +107,7 @@ export function AgendaView(){
 
   function openEdit(block: CalendarBlock) {
     setEditingBlock(block);
-    setForm({ title: block.title, description: block.description, blockType: block.blockType, domain: block.domain, startAt: isoLocal(new Date(block.startAt)), endAt: isoLocal(new Date(block.endAt)) });
+    setForm({ title: block.title, description: block.description, blockType: block.blockType, domain: block.domain, startAt: isoLocal(new Date(block.startAt)), endAt: isoLocal(new Date(block.endAt)), completed: block.completed });
   }
 
   async function saveEdit(event: FormEvent) {
@@ -118,7 +118,7 @@ export function AgendaView(){
       await lifeosApi.updateCalendarBlock(editingBlock.id, {
         title: form.title.trim(), description: form.description, blockType: form.blockType, domain: form.domain,
         startAt: new Date(form.startAt).toISOString(), endAt: new Date(form.endAt).toISOString(),
-        taskId: editingBlock.taskId ?? null, projectId: editingBlock.projectId ?? null, completed: editingBlock.completed,
+        taskId: editingBlock.taskId ?? null, projectId: editingBlock.projectId ?? null, completed: form.completed,
       });
       setEditingBlock(null);
       notify("Bloco atualizado.");
@@ -214,15 +214,20 @@ export function AgendaView(){
                 className={`timeline-block domain-${block.domain.toLowerCase()} ${block.completed ? "completed" : ""}`}
                 style={{ top, height, left: `${left}%`, width: `calc(${width}% - 4px)` }}
                 draggable
-                onDragStart={event => event.dataTransfer.setData("text/plain", JSON.stringify({ kind: "block", id: block.id }))}
+                onDragStart={event => {
+                  if ((event.target as HTMLElement).closest(".timeline-check, .timeline-block footer")) { event.preventDefault(); return; }
+                  event.dataTransfer.setData("text/plain", JSON.stringify({ kind: "block", id: block.id }));
+                }}
                 onDoubleClick={() => openEdit(block)}
-                title={`${block.title} · ${new Date(block.startAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}–${new Date(block.endAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`}>
-                <div className="timeline-block-head"><GripVertical size={12}/><span>{domainLabels[block.domain]}</span></div>
+                title={`${block.title} · ${new Date(block.startAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}–${new Date(block.endAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}${block.completed ? " · Concluído" : ""}`}>
+                <div className="timeline-block-head">
+                  <button className={`timeline-check ${block.completed ? "checked" : ""}`} onMouseDown={event => event.stopPropagation()} onClick={() => void toggle(block)} title={block.completed ? "Marcar como não concluído" : "Marcar como concluído"} aria-pressed={block.completed}>{block.completed ? <Check size={11}/> : null}</button>
+                  <span>{domainLabels[block.domain]}</span>
+                </div>
                 <strong>{block.title}</strong>
                 {height > 40 ? <small><Clock3 size={11}/>{formatDuration(Math.round((new Date(block.endAt).getTime()-new Date(block.startAt).getTime())/60000))} · {typeLabels[block.blockType]}</small> : null}
-                <footer>
+                <footer onMouseDown={event => event.stopPropagation()}>
                   <button onClick={() => openEdit(block)} title="Editar"><Pencil size={13}/></button>
-                  <button onClick={() => void toggle(block)} title="Concluir"><Check size={13}/></button>
                   <button onClick={() => setDeleteTarget(block)} title="Excluir"><Trash2 size={13}/></button>
                 </footer>
               </div>)}
@@ -257,6 +262,7 @@ export function AgendaView(){
           <label className="field"><span>Início</span><input type="datetime-local" value={form.startAt} onChange={e=>setForm({...form,startAt:e.target.value})}/></label>
           <label className="field"><span>Fim</span><input type="datetime-local" value={form.endAt} onChange={e=>setForm({...form,endAt:e.target.value})}/></label>
         </div>
+        <label className="settings-check"><input type="checkbox" checked={form.completed} onChange={e=>setForm({...form,completed:e.target.checked})}/><span><strong>Concluído</strong><small>Marque quando esse bloco já foi realizado.</small></span></label>
         {editingBlock?.taskId ? <div className="drawer-tip"><strong>Vinculado a uma tarefa</strong><span>Concluir esse bloco também conclui a tarefa correspondente.</span></div> : null}
       </form>
     </EntityDrawer>
