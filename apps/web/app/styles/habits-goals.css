@@ -1,0 +1,16 @@
+.habit-create,.goal-create{display:grid;grid-template-columns:auto 70px minmax(180px,1fr) minmax(130px,.35fr) auto auto;gap:10px;align-items:center;margin-bottom:16px}.habit-create input,.goal-create input{border:1px solid var(--line);background:var(--surface-strong);color:var(--text);border-radius:10px;padding:10px;min-width:0}.habit-create button,.goal-create button{border:0;border-radius:10px;background:var(--text);color:var(--bg);padding:10px 14px;cursor:pointer}.habit-card{position:relative;padding:0;overflow:hidden}.habit-toggle{border:0;background:transparent;color:inherit;text-align:left;padding:22px;display:flex;flex:1;flex-direction:column;cursor:pointer}.habit-actions{position:absolute;right:16px;bottom:14px;display:flex;gap:4px}.habit-actions button{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:6px}.goal-create{grid-template-columns:auto minmax(180px,1fr) minmax(120px,.4fr) 90px 150px auto}.goal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.goal-card{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-lg);padding:24px;box-shadow:var(--shadow-md);min-height:260px;display:flex;flex-direction:column}.goal-card header{display:flex;justify-content:space-between}.goal-card h2{font-size:25px;letter-spacing:-.035em;margin:16px 0 8px}.goal-card p{color:var(--muted);line-height:1.5}.goal-progress-copy{margin-top:auto;display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.goal-progress-copy strong{color:var(--text)}.goal-card footer{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;margin-top:16px}@media(max-width:900px){.habit-create,.goal-create{grid-template-columns:1fr}.habit-create>svg,.goal-create>svg{display:none}}
+
+/* Habit icon rendering and card action alignment */
+.habit-create select {
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+.habit-symbol svg { display: block; }
+.habit-emoji { font-size: 22px; line-height: 1; }
+.habit-actions { top: 15px; right: 54px; bottom: auto; z-index: 2; }
+.habit-toggle { position: relative; }
+.habit-card footer { padding-right: 0; }

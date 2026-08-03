@@ -1,0 +1,67 @@
+:root {
+  --bg: #f5f5f3;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-strong: #ffffff;
+  --surface-soft: #f1efe9;
+  --text: #171717;
+  --muted: #747474;
+  --line: #e7e6e2;
+  --accent: #1f6d4d;
+  --accent-soft: #e7f3ec;
+  --shadow: 0 18px 50px rgba(26, 26, 26, 0.06);
+  color-scheme: light;
+
+  /* aliases kept for legacy rules written against these names */
+  --border: var(--line);
+  --background: var(--bg);
+  --panel: var(--surface);
+  --panel-soft: var(--surface-soft);
+
+  /* shape scale */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* elevation scale */
+  --shadow-sm: 0 4px 15px rgba(25, 25, 25, .05);
+  --shadow-md: 0 10px 30px rgba(25, 25, 25, .06);
+  --shadow-lg: var(--shadow);
+
+  /* semantic colors */
+  --success: var(--accent);
+  --color-danger: #d92d20;
+  --color-danger-strong: #b42318;
+  --color-danger-bg: #ffeaea;
+  --color-warning: #8b6315;
+  --color-warning-strong: #f79009;
+  --color-warning-bg: #fff4d9;
+  --color-info: #315eaa;
+  --color-info-bg: #e8f0ff;
+  --color-inbox: #684f96;
+  --color-inbox-bg: #eeeaf7;
+}
+
+:root[data-theme="dark"] {
+  --bg: #111210;
+  --surface: rgba(27, 29, 26, 0.9);
+  --surface-strong: #1d1f1c;
+  --surface-soft: #20221f;
+  --text: #f3f3ef;
+  --muted: #9d9f98;
+  --line: #30332e;
+  --accent: #70c49b;
+  --accent-soft: #1c3a2b;
+  --shadow: 0 18px 50px rgba(0,0,0,.2);
+  color-scheme: dark;
+
+  --color-danger: #ff6b61;
+  --color-danger-strong: #ff8a80;
+  --color-danger-bg: #3a1f1c;
+  --color-warning: #e7c778;
+  --color-warning-bg: #3a301b;
+  --color-info: #9cbfff;
+  --color-info-bg: #1c2b42;
+  --color-inbox: #c9b6ef;
+  --color-inbox-bg: #2c2440;
+}

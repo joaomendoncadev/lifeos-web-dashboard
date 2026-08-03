@@ -1,0 +1,21 @@
+/* v0.7 — foco persistente e revisão diária */
+.stats-grid-five { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.review-grid { display:grid; grid-template-columns:minmax(0, 1.7fr) minmax(260px,.8fr); gap:20px; }
+.review-main { display:flex; flex-direction:column; gap:12px; }
+.review-main textarea { min-height:110px; resize:vertical; border:1px solid var(--border); background:var(--surface-soft); color:var(--text); border-radius:14px; padding:14px; font:inherit; }
+.field-label { font-size:.82rem; font-weight:700; color:var(--muted); margin-top:6px; }
+.mood-picker { display:flex; gap:10px; }
+.mood-picker button { width:48px; height:44px; border-radius:13px; border:1px solid var(--border); background:var(--surface-soft); font-size:1.35rem; cursor:pointer; }
+.mood-picker button.active { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.08); }
+.review-tip { align-self:start; }
+.review-tip ul { color:var(--muted); padding-left:20px; line-height:1.8; }
+.success-message { color:var(--success, #238636); font-size:.88rem; }
+.focus-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.7fr); gap:20px; }
+.focus-title-input { width:min(620px,90%); text-align:center; margin:10px auto 4px; border:0; border-bottom:1px solid var(--border); background:transparent; color:var(--text); font-size:1.35rem; font-weight:700; padding:10px; }
+.duration-pills { display:flex; justify-content:center; gap:8px; margin:8px 0 2px; }
+.duration-pills button { border:1px solid var(--border); background:var(--surface-soft); color:var(--muted); border-radius:999px; padding:7px 12px; cursor:pointer; }
+.duration-pills button.active { background:var(--text); color:var(--background); }
+.history-row { display:flex; justify-content:space-between; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); }
+.history-row div { display:flex; flex-direction:column; gap:4px; }
+.history-row span, .history-row em { color:var(--muted); font-size:.8rem; font-style:normal; }
+@media (max-width:1100px) { .review-grid,.focus-layout { grid-template-columns:1fr; } }
