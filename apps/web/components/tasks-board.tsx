@@ -9,6 +9,7 @@ import { SyncState } from "./sync-state";
 import { EntityDrawer } from "./entity-drawer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./toast-provider";
+import { ListRowsSkeleton } from "./skeleton";
 
 const initial: Task[] = [];
 const emptyTask: TaskInput = { title: "", projectId: null, status: "Inbox", context: "Computador", priority: "Média", durationMinutes: 30, dueDate: null };
@@ -103,13 +104,13 @@ export function TasksBoard({ view = "all" }: { view?: TaskView }) {
       <div className="resource-header"><SyncState loading={loading} source={source} warning={warning} error={error} onRetry={reload}/></div>
       <form className="capture-bar capture-with-project" onSubmit={capture}><Plus size={17}/><input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="Capture uma nova tarefa"/><select value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Inbox</option>{projects.map(project => <option value={project.id} key={project.id}>{project.name}</option>)}</select><button disabled={saving}>{saving ? "Salvando…" : "Adicionar"}</button></form>
       <div className="toolbar"><label className="search-field"><Search size={17}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar nesta visão"/></label>{view === "all" ? <div className="segmented">{["Todas", "Inbox", "Próxima", "Em andamento", "Concluída"].map(item => <button key={item} onClick={() => setStatus(item)} className={status === item ? "selected" : ""} type="button">{item}</button>)}</div> : null}</div>
-      <div className="data-list">{!loading && filtered.length === 0 ? <div className="empty-state compact"><strong>Nenhuma tarefa encontrada</strong><p>Ajuste os filtros ou pressione <kbd>N</kbd> para criar uma tarefa.</p><button className="primary-button" onClick={openCreate}><Plus size={16}/> Nova tarefa</button></div> : null}{filtered.map(task => <article className={`data-row task-row ${task.status === "Concluída" ? "completed" : ""}`} key={task.id} onDoubleClick={() => openEdit(task)}>
+      <div className="data-list">{loading ? <ListRowsSkeleton count={5}/> : <>{filtered.length === 0 ? <div className="empty-state compact"><strong>Nenhuma tarefa encontrada</strong><p>Ajuste os filtros ou pressione <kbd>N</kbd> para criar uma tarefa.</p><button className="primary-button" onClick={openCreate}><Plus size={16}/> Nova tarefa</button></div> : null}{filtered.map(task => <article className={`data-row task-row ${task.status === "Concluída" ? "completed" : ""}`} key={task.id} onDoubleClick={() => openEdit(task)}>
         <button className="task-check" onClick={() => void toggleTask(task)}>{task.status === "Concluída" ? <Check size={15}/> : null}</button>
         <button className="data-copy task-copy" onClick={() => openEdit(task)}><strong>{task.title}</strong><span>{task.project} · {task.context} · {task.priority}{task.dueDate ? ` · ${new Date(`${task.dueDate}T12:00:00`).toLocaleDateString("pt-BR")}` : ""}</span></button>
         <span className={`status-badge status-${task.status.toLowerCase().replace(/ /g, "-")}`}>{task.status}</span>
         <span className="time-label"><Clock3 size={14}/> {task.duration}</span>
         <div className="row-actions"><button className="icon-button ghost" onClick={() => openEdit(task)} title="Editar"><Pencil size={16}/></button><button className="icon-button ghost danger-icon" onClick={() => setDeleteTarget(task)} title="Excluir"><Trash2 size={16}/></button></div>
-      </article>)}</div>
+      </article>)}</>}</div>
     </section>
 
     <EntityDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} eyebrow={editingTask ? "Editar tarefa" : "Nova tarefa"} title={editingTask?.title || "Organize a próxima ação"} footer={<><button className="secondary-button" type="button" onClick={() => setDrawerOpen(false)}>Cancelar</button><button className="primary-button" form="task-editor-form" disabled={saving}>{saving ? "Salvando…" : editingId ? "Salvar alterações" : "Criar tarefa"}</button></>}>

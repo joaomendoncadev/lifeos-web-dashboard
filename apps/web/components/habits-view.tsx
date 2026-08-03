@@ -10,6 +10,7 @@ import { SyncState } from "./sync-state";
 import { EntityDrawer } from "./entity-drawer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./toast-provider";
+import { CardGridSkeleton } from "./skeleton";
 
 const emptyForm: HabitInput = { name: "", description: "", frequency: "Diário", icon: "Check" };
 
@@ -64,7 +65,7 @@ export function HabitsView() {
     <div className="resource-header"><SyncState loading={loading} source={source} warning={warning} error={error} onRetry={reload} /><button className="primary-button" onClick={openCreate}><Plus size={16}/> Novo hábito</button></div>
     <section className="habit-summary panel"><div><span className="eyebrow small">Consistência diária</span><h2>{completed} de {items.length} concluídos hoje</h2><p>Continue pequeno, mas continue.</p></div><div className="streak"><Flame size={26} /><strong>{Math.max(...items.map(item => item.streak), 0)}</strong><span>melhor sequência</span></div></section>
     {!loading && items.length === 0 ? <div className="empty-state panel"><strong>Nenhum hábito criado</strong><p>Comece com uma rotina simples que você consiga repetir todos os dias.</p><button className="primary-button" onClick={openCreate}><Plus size={16}/> Criar primeiro hábito</button></div> : null}
-    <section className="habit-cards">{items.map(habit => <article key={habit.id} className={`habit-card ${habit.done ? "done" : ""}`} onDoubleClick={() => openEdit(habit)}>
+    <section className="habit-cards">{loading ? <CardGridSkeleton count={4} className="habit-card"/> : items.map(habit => <article key={habit.id} className={`habit-card ${habit.done ? "done" : ""}`} onDoubleClick={() => openEdit(habit)}>
       <button className="habit-toggle" onClick={() => void toggle(habit)} aria-label={`Marcar ${habit.name}`}>
         <div className="habit-card-top"><span className="habit-symbol"><HabitIcon name={habit.icon} /></span><span className="task-check">{habit.done ? <Check size={15} /> : null}</span></div>
         <div><strong>{habit.name}</strong><p>{habit.description || "Sem descrição."}</p></div><footer><span>{habit.frequency}</span><strong>{habit.streak} dias</strong></footer>
