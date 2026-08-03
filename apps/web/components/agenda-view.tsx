@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlus, Check, ChevronLeft, ChevronRight, Clock3, GripVertical, Pencil, Trash2 } from "lucide-react";
+import { CalendarPlus, Check, ChevronLeft, ChevronRight, Clock3, GripVertical, Trash2 } from "lucide-react";
 import { DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { lifeosApi } from "@/lib/api";
 import { CalendarBlock, CalendarBlockDomain, CalendarBlockInput, CalendarBlockType, Task } from "@/lib/types";
@@ -218,16 +218,14 @@ export function AgendaView(){
                   if ((event.target as HTMLElement).closest(".timeline-check, .timeline-block footer")) { event.preventDefault(); return; }
                   event.dataTransfer.setData("text/plain", JSON.stringify({ kind: "block", id: block.id }));
                 }}
-                onDoubleClick={() => openEdit(block)}
+                onClick={() => openEdit(block)}
                 title={`${block.title} · ${new Date(block.startAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}–${new Date(block.endAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}${block.completed ? " · Concluído" : ""}`}>
                 <div className="timeline-block-head">
-                  <button className={`timeline-check ${block.completed ? "checked" : ""}`} onMouseDown={event => event.stopPropagation()} onClick={() => void toggle(block)} title={block.completed ? "Marcar como não concluído" : "Marcar como concluído"} aria-pressed={block.completed}>{block.completed ? <Check size={11}/> : null}</button>
-                  <span>{domainLabels[block.domain]}</span>
+                  <button className={`timeline-check ${block.completed ? "checked" : ""}`} onMouseDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); void toggle(block); }} title={block.completed ? "Marcar como não concluído" : "Marcar como concluído"} aria-pressed={block.completed}>{block.completed ? <Check size={11}/> : null}</button>
+                  <strong>{block.title}</strong>
                 </div>
-                <strong>{block.title}</strong>
-                {height > 40 ? <small><Clock3 size={11}/>{formatDuration(Math.round((new Date(block.endAt).getTime()-new Date(block.startAt).getTime())/60000))} · {typeLabels[block.blockType]}</small> : null}
-                <footer onMouseDown={event => event.stopPropagation()}>
-                  <button onClick={() => openEdit(block)} title="Editar"><Pencil size={13}/></button>
+                {height > 40 ? <small><Clock3 size={11}/>{formatDuration(Math.round((new Date(block.endAt).getTime()-new Date(block.startAt).getTime())/60000))} · {domainLabels[block.domain]}</small> : null}
+                <footer onMouseDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
                   <button onClick={() => setDeleteTarget(block)} title="Excluir"><Trash2 size={13}/></button>
                 </footer>
               </div>)}
