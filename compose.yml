@@ -34,6 +34,8 @@ services:
       dockerfile: Containerfile
       args:
         NEXT_PUBLIC_API_URL: "http://localhost:${API_PORT:-8081}/api/v1"
+    environment:
+      TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
     ports: ["${WEB_PORT:-3000}:3000"]
     depends_on:
       api: { condition: service_healthy }
