@@ -1,1 +1,1 @@
-package com.joaomendonca.lifeos.habit; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface HabitRepository extends JpaRepository<HabitEntity,UUID>{List<HabitEntity> findByActiveTrueOrderByNameAsc();}
+package com.joaomendonca.lifeos.habit; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository; public interface HabitRepository extends JpaRepository<HabitEntity,UUID>{List<HabitEntity> findByActiveTrueOrderByNameAsc();Optional<HabitEntity> findByActiveTrueAndNameIgnoreCase(String name);}

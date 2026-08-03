@@ -1,5 +1,6 @@
 package com.joaomendonca.lifeos.task;
 
+import com.joaomendonca.lifeos.agenda.AgendaSyncService;
 import com.joaomendonca.lifeos.workspace.WorkspaceRepository;
 import com.joaomendonca.lifeos.workspace.ActivityEventEntity;
 import com.joaomendonca.lifeos.workspace.ActivityEventRepository;
@@ -17,11 +18,13 @@ public class TaskController {
   private final TaskRepository tasks;
   private final WorkspaceRepository workspaces;
   private final ActivityEventRepository events;
+  private final AgendaSyncService sync;
 
-  public TaskController(TaskRepository tasks, WorkspaceRepository workspaces, ActivityEventRepository events) {
+  public TaskController(TaskRepository tasks, WorkspaceRepository workspaces, ActivityEventRepository events, AgendaSyncService sync) {
     this.tasks = tasks;
     this.workspaces = workspaces;
     this.events = events;
+    this.sync = sync;
   }
 
   record TaskRequest(
@@ -69,6 +72,7 @@ public class TaskController {
     var entity = find(id);
     entity.setStatus(TaskStatus.fromLabel(request.status()));
     entity = tasks.save(entity);
+    sync.fromTask(entity);
     record(entity, entity.getStatus() == TaskStatus.DONE ? "TASK_COMPLETED" : "TASK_STATUS_CHANGED", "Status alterado para " + entity.getStatus().label + ": " + entity.getTitle());
     return map(entity);
   }
