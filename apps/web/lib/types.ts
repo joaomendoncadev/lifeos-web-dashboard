@@ -133,12 +133,14 @@ export type DailyReview = {
 };
 
 export type CalendarBlockType = "FOCUS" | "MEETING" | "PERSONAL" | "ROUTINE" | "BREAK";
+export type CalendarBlockDomain = "TRABALHO" | "SAUDE" | "ESTUDO" | "SOCIAL" | "DESCANSO" | "PESSOAL";
 
 export type CalendarBlock = {
   id: string;
   title: string;
   description: string;
   blockType: CalendarBlockType;
+  domain: CalendarBlockDomain;
   startAt: string;
   endAt: string;
   taskId?: string | null;

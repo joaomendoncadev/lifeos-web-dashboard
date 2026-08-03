@@ -14,6 +14,7 @@ public class CalendarBlockEntity {
   @Column(nullable = false) private String title;
   @Column(columnDefinition = "text") private String description = "";
   @Column(nullable = false) private String blockType = "FOCUS";
+  @Column(nullable = false) private String domain = "PESSOAL";
   @Column(nullable = false) private Instant startAt;
   @Column(nullable = false) private Instant endAt;
   private UUID taskId;

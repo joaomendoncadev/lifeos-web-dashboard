@@ -1,14 +1,18 @@
 "use client";
 
-import { CalendarPlus, Check, ChevronLeft, ChevronRight, Clock3, GripVertical, Trash2 } from "lucide-react";
-import { DragEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CalendarPlus, Check, ChevronLeft, ChevronRight, Clock3, GripVertical, Pencil, Trash2 } from "lucide-react";
+import { DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { lifeosApi } from "@/lib/api";
-import { CalendarBlock, CalendarBlockInput, CalendarBlockType, Task } from "@/lib/types";
+import { CalendarBlock, CalendarBlockDomain, CalendarBlockInput, CalendarBlockType, Task } from "@/lib/types";
 import { PageHeader } from "./page-header";
 import { SyncState } from "./sync-state";
 import { Skeleton } from "./skeleton";
+import { EntityDrawer } from "./entity-drawer";
+import { ConfirmDialog } from "./confirm-dialog";
+import { useToast } from "./toast-provider";
 
 const typeLabels: Record<CalendarBlockType,string> = {FOCUS:"Foco",MEETING:"Reunião",PERSONAL:"Pessoal",ROUTINE:"Rotina",BREAK:"Pausa"};
+const domainLabels: Record<CalendarBlockDomain,string> = {TRABALHO:"Trabalho",SAUDE:"Saúde",ESTUDO:"Estudo",SOCIAL:"Social",DESCANSO:"Descanso",PESSOAL:"Pessoal"};
 const startOfWeek=(date:Date)=>{const d=new Date(date);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);d.setHours(0,0,0,0);return d;};
 const isoLocal=(date:Date)=>{const offset=date.getTimezoneOffset();return new Date(date.getTime()-offset*60000).toISOString().slice(0,16);};
 const dayKey=(value:string|Date)=>{const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
@@ -49,6 +53,9 @@ function layoutDay(dayBlocks: CalendarBlock[]): Positioned[] {
 }
 
 type DragPayload = { kind: "block" | "task"; id: string };
+type BlockForm = { title: string; description: string; blockType: CalendarBlockType; domain: CalendarBlockDomain; startAt: string; endAt: string };
+
+const emptyForm: BlockForm = { title: "", description: "", blockType: "FOCUS", domain: "PESSOAL", startAt: isoLocal(new Date(Date.now()+3600000)), endAt: isoLocal(new Date(Date.now()+7200000)) };
 
 export function AgendaView(){
   const [anchor,setAnchor]=useState(()=>startOfWeek(new Date()));
@@ -58,14 +65,20 @@ export function AgendaView(){
   const [message,setMessage]=useState<string>();
   const [title,setTitle]=useState("");
   const [type,setType]=useState<CalendarBlockType>("FOCUS");
+  const [domain,setDomain]=useState<CalendarBlockDomain>("PESSOAL");
   const [startAt,setStartAt]=useState(()=>isoLocal(new Date(Date.now()+3600000)));
   const [endAt,setEndAt]=useState(()=>isoLocal(new Date(Date.now()+7200000)));
   const [dropHint,setDropHint]=useState<string | null>(null);
+  const [editingBlock,setEditingBlock]=useState<CalendarBlock | null>(null);
+  const [form,setForm]=useState<BlockForm>(emptyForm);
+  const [saving,setSaving]=useState(false);
+  const [deleteTarget,setDeleteTarget]=useState<CalendarBlock | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrolledOnce = useRef(false);
   const days=useMemo(()=>Array.from({length:7},(_,i)=>{const d=new Date(anchor);d.setDate(d.getDate()+i);return d;}),[anchor]);
   const now = new Date();
   const todayKey = dayKey(now);
+  const { notify } = useToast();
 
   const load=useCallback(async()=>{
     setLoading(true);setMessage(undefined);
@@ -88,17 +101,51 @@ export function AgendaView(){
   const scheduledTaskIds = useMemo(() => new Set(blocks.map(b => b.taskId).filter(Boolean) as string[]), [blocks]);
   const unscheduledTasks = useMemo(() => tasks.filter(t => t.status !== "Concluída" && !scheduledTaskIds.has(t.id)), [tasks, scheduledTaskIds]);
 
-  async function create(){if(!title.trim())return;setMessage(undefined);try{const input:CalendarBlockInput={title:title.trim(),description:"",blockType:type,startAt:new Date(startAt).toISOString(),endAt:new Date(endAt).toISOString(),taskId:null,projectId:null,completed:false};await lifeosApi.createCalendarBlock(input);setTitle("");await load();}catch(e){setMessage(e instanceof Error?e.message:"Falha ao criar bloco.");}}
+  async function create(){if(!title.trim())return;setMessage(undefined);try{const input:CalendarBlockInput={title:title.trim(),description:"",blockType:type,domain,startAt:new Date(startAt).toISOString(),endAt:new Date(endAt).toISOString(),taskId:null,projectId:null,completed:false};await lifeosApi.createCalendarBlock(input);setTitle("");await load();}catch(e){setMessage(e instanceof Error?e.message:"Falha ao criar bloco.");}}
   async function toggle(block:CalendarBlock){await lifeosApi.completeCalendarBlock(block.id,!block.completed);await load();}
-  async function remove(id:string){await lifeosApi.deleteCalendarBlock(id);await load();}
   const move=(delta:number)=>setAnchor(prev=>{const d=new Date(prev);d.setDate(d.getDate()+delta*7);return d;});
+
+  function openEdit(block: CalendarBlock) {
+    setEditingBlock(block);
+    setForm({ title: block.title, description: block.description, blockType: block.blockType, domain: block.domain, startAt: isoLocal(new Date(block.startAt)), endAt: isoLocal(new Date(block.endAt)) });
+  }
+
+  async function saveEdit(event: FormEvent) {
+    event.preventDefault();
+    if (!editingBlock || !form.title.trim()) return;
+    setSaving(true);
+    try {
+      await lifeosApi.updateCalendarBlock(editingBlock.id, {
+        title: form.title.trim(), description: form.description, blockType: form.blockType, domain: form.domain,
+        startAt: new Date(form.startAt).toISOString(), endAt: new Date(form.endAt).toISOString(),
+        taskId: editingBlock.taskId ?? null, projectId: editingBlock.projectId ?? null, completed: editingBlock.completed,
+      });
+      setEditingBlock(null);
+      notify("Bloco atualizado.");
+      await load();
+    } catch (e) { notify(e instanceof Error ? e.message : "Falha ao salvar o bloco.", "error"); }
+    finally { setSaving(false); }
+  }
+
+  async function removeBlock() {
+    if (!deleteTarget) return;
+    setSaving(true);
+    try {
+      await lifeosApi.deleteCalendarBlock(deleteTarget.id);
+      setDeleteTarget(null);
+      if (editingBlock?.id === deleteTarget.id) setEditingBlock(null);
+      notify("Bloco excluído.");
+      await load();
+    } catch (e) { notify(e instanceof Error ? e.message : "Falha ao excluir o bloco.", "error"); }
+    finally { setSaving(false); }
+  }
 
   async function moveBlock(block: CalendarBlock, day: Date, minutes: number) {
     const durationMs = new Date(block.endAt).getTime() - new Date(block.startAt).getTime();
     const nextStart = dateAtMinutes(day, minutes);
     const nextEnd = new Date(nextStart.getTime() + durationMs);
     try {
-      await lifeosApi.updateCalendarBlock(block.id, { title: block.title, description: block.description, blockType: block.blockType, startAt: nextStart.toISOString(), endAt: nextEnd.toISOString(), taskId: block.taskId ?? null, projectId: block.projectId ?? null, completed: block.completed });
+      await lifeosApi.updateCalendarBlock(block.id, { title: block.title, description: block.description, blockType: block.blockType, domain: block.domain, startAt: nextStart.toISOString(), endAt: nextEnd.toISOString(), taskId: block.taskId ?? null, projectId: block.projectId ?? null, completed: block.completed });
       await load();
     } catch (e) { setMessage(e instanceof Error ? e.message : "Falha ao mover o bloco."); }
   }
@@ -107,7 +154,7 @@ export function AgendaView(){
     const start = dateAtMinutes(day, minutes);
     const end = new Date(start.getTime() + task.durationMinutes * 60000);
     try {
-      await lifeosApi.createCalendarBlock({ title: task.title, description: "", blockType: "FOCUS", startAt: start.toISOString(), endAt: end.toISOString(), taskId: task.id, projectId: task.projectId ?? null, completed: false });
+      await lifeosApi.createCalendarBlock({ title: task.title, description: "", blockType: "FOCUS", domain: "PESSOAL", startAt: start.toISOString(), endAt: end.toISOString(), taskId: task.id, projectId: task.projectId ?? null, completed: false });
       await load();
     } catch (e) { setMessage(e instanceof Error ? e.message : "Falha ao agendar a tarefa."); }
   }
@@ -137,7 +184,7 @@ export function AgendaView(){
     <div className="resource-header"><SyncState loading={loading} source="api" error={message} onRetry={load}/></div>
     <section className="panel agenda-toolbar">
       <div className="week-navigation"><button onClick={()=>move(-1)}><ChevronLeft size={17}/></button><strong>{days[0].toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})} — {days[6].toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"})}</strong><button onClick={()=>move(1)}><ChevronRight size={17}/></button><button onClick={()=>setAnchor(startOfWeek(new Date()))}>Hoje</button></div>
-      <div className="agenda-create"><CalendarPlus size={18}/><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Novo bloco de tempo"/><select value={type} onChange={e=>setType(e.target.value as CalendarBlockType)}>{Object.entries(typeLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><input type="datetime-local" value={startAt} onChange={e=>setStartAt(e.target.value)}/><input type="datetime-local" value={endAt} onChange={e=>setEndAt(e.target.value)}/><button onClick={create}>Adicionar</button></div>
+      <div className="agenda-create"><CalendarPlus size={18}/><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Novo bloco de tempo"/><select value={type} onChange={e=>setType(e.target.value as CalendarBlockType)}>{Object.entries(typeLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select value={domain} onChange={e=>setDomain(e.target.value as CalendarBlockDomain)}>{Object.entries(domainLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><input type="datetime-local" value={startAt} onChange={e=>setStartAt(e.target.value)}/><input type="datetime-local" value={endAt} onChange={e=>setEndAt(e.target.value)}/><button onClick={create}>Adicionar</button></div>
     </section>
 
     <div className="agenda-layout">
@@ -164,15 +211,20 @@ export function AgendaView(){
               {isToday ? <div className="now-line" style={{ top: (minutesOfDay(now) / 60) * ROW_HEIGHT }}/> : null}
               {items.map(({ block, top, height, left, width }) => <div
                 key={block.id}
-                className={`timeline-block type-${block.blockType.toLowerCase()} ${block.completed ? "completed" : ""}`}
+                className={`timeline-block domain-${block.domain.toLowerCase()} ${block.completed ? "completed" : ""}`}
                 style={{ top, height, left: `${left}%`, width: `calc(${width}% - 4px)` }}
                 draggable
                 onDragStart={event => event.dataTransfer.setData("text/plain", JSON.stringify({ kind: "block", id: block.id }))}
+                onDoubleClick={() => openEdit(block)}
                 title={`${block.title} · ${new Date(block.startAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}–${new Date(block.endAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`}>
-                <div className="timeline-block-head"><GripVertical size={12}/><span>{typeLabels[block.blockType]}</span></div>
+                <div className="timeline-block-head"><GripVertical size={12}/><span>{domainLabels[block.domain]}</span></div>
                 <strong>{block.title}</strong>
-                {height > 40 ? <small><Clock3 size={11}/>{formatDuration(Math.round((new Date(block.endAt).getTime()-new Date(block.startAt).getTime())/60000))}</small> : null}
-                <footer><button onClick={() => void toggle(block)} title="Concluir"><Check size={13}/></button><button onClick={() => void remove(block.id)} title="Excluir"><Trash2 size={13}/></button></footer>
+                {height > 40 ? <small><Clock3 size={11}/>{formatDuration(Math.round((new Date(block.endAt).getTime()-new Date(block.startAt).getTime())/60000))} · {typeLabels[block.blockType]}</small> : null}
+                <footer>
+                  <button onClick={() => openEdit(block)} title="Editar"><Pencil size={13}/></button>
+                  <button onClick={() => void toggle(block)} title="Concluir"><Check size={13}/></button>
+                  <button onClick={() => setDeleteTarget(block)} title="Excluir"><Trash2 size={13}/></button>
+                </footer>
               </div>)}
             </div>;
           })}
@@ -193,5 +245,21 @@ export function AgendaView(){
         </div>
       </aside>
     </div>
+
+    <EntityDrawer open={Boolean(editingBlock)} onClose={() => setEditingBlock(null)} eyebrow="Editar bloco" title={editingBlock?.title || "Bloco de agenda"}
+      footer={<><button className="danger-button" type="button" onClick={() => editingBlock && setDeleteTarget(editingBlock)}><Trash2 size={15}/> Excluir</button><button className="secondary-button" type="button" onClick={() => setEditingBlock(null)}>Cancelar</button><button className="primary-button" form="block-editor-form" disabled={saving}>{saving ? "Salvando…" : "Salvar alterações"}</button></>}>
+      <form id="block-editor-form" className="entity-form" onSubmit={saveEdit}>
+        <label className="field field-wide"><span>Título</span><input autoFocus value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
+        <label className="field field-wide"><span>Descrição</span><textarea rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Notas sobre esse bloco"/></label>
+        <div className="form-grid">
+          <label className="field"><span>Tipo</span><select value={form.blockType} onChange={e=>setForm({...form,blockType:e.target.value as CalendarBlockType})}>{Object.entries(typeLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+          <label className="field"><span>Área</span><select value={form.domain} onChange={e=>setForm({...form,domain:e.target.value as CalendarBlockDomain})}>{Object.entries(domainLabels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+          <label className="field"><span>Início</span><input type="datetime-local" value={form.startAt} onChange={e=>setForm({...form,startAt:e.target.value})}/></label>
+          <label className="field"><span>Fim</span><input type="datetime-local" value={form.endAt} onChange={e=>setForm({...form,endAt:e.target.value})}/></label>
+        </div>
+        {editingBlock?.taskId ? <div className="drawer-tip"><strong>Vinculado a uma tarefa</strong><span>Concluir esse bloco também conclui a tarefa correspondente.</span></div> : null}
+      </form>
+    </EntityDrawer>
+    <ConfirmDialog open={Boolean(deleteTarget)} title="Excluir bloco?" description={`"${deleteTarget?.title ?? ""}" será removido permanentemente da agenda.`} onCancel={() => setDeleteTarget(null)} onConfirm={() => void removeBlock()} busy={saving}/>
   </main>;
 }

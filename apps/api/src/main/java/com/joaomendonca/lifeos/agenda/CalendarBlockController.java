@@ -20,8 +20,9 @@ public class CalendarBlockController {
 
   record Request(@NotBlank @Size(max=240) String title, @Size(max=4000) String description,
       @Pattern(regexp="FOCUS|MEETING|PERSONAL|ROUTINE|BREAK") String blockType,
+      @Pattern(regexp="TRABALHO|SAUDE|ESTUDO|SOCIAL|DESCANSO|PESSOAL") String domain,
       @NotNull Instant startAt, @NotNull Instant endAt, UUID taskId, UUID projectId, Boolean completed) {}
-  record Response(String id, String title, String description, String blockType, Instant startAt, Instant endAt,
+  record Response(String id, String title, String description, String blockType, String domain, Instant startAt, Instant endAt,
       String taskId, String projectId, boolean completed) {}
 
   @GetMapping
@@ -69,9 +70,10 @@ public class CalendarBlockController {
   private void validatePeriod(Instant start, Instant end) { if (!end.isAfter(start)) throw new IllegalArgumentException("O fim deve ser posterior ao início."); }
   private void apply(CalendarBlockEntity e, Request r) {
     e.setTitle(r.title().trim()); e.setDescription(r.description() == null ? "" : r.description().trim());
-    e.setBlockType(r.blockType() == null ? "FOCUS" : r.blockType()); e.setStartAt(r.startAt()); e.setEndAt(r.endAt());
+    e.setBlockType(r.blockType() == null ? "FOCUS" : r.blockType()); e.setDomain(r.domain() == null ? "PESSOAL" : r.domain());
+    e.setStartAt(r.startAt()); e.setEndAt(r.endAt());
     e.setTaskId(r.taskId()); e.setProjectId(r.projectId()); if (r.completed() != null) e.setCompleted(r.completed());
   }
 
-  private Response map(CalendarBlockEntity e) { return new Response(e.getId().toString(), e.getTitle(), e.getDescription(), e.getBlockType(), e.getStartAt(), e.getEndAt(), e.getTaskId()==null?null:e.getTaskId().toString(), e.getProjectId()==null?null:e.getProjectId().toString(), e.getCompleted()); }
+  private Response map(CalendarBlockEntity e) { return new Response(e.getId().toString(), e.getTitle(), e.getDescription(), e.getBlockType(), e.getDomain(), e.getStartAt(), e.getEndAt(), e.getTaskId()==null?null:e.getTaskId().toString(), e.getProjectId()==null?null:e.getProjectId().toString(), e.getCompleted()); }
 }
