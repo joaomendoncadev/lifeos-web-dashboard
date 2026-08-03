@@ -5,7 +5,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-lifeos}
       POSTGRES_USER: ${POSTGRES_USER:-lifeos}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lifeos}
-    ports: ["5432:5432"]
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
     volumes: ["lifeos_postgres_data:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -33,7 +33,7 @@ services:
       dockerfile: Containerfile
       args:
         NEXT_PUBLIC_API_URL: "http://localhost:${API_PORT:-8081}/api/v1"
-    ports: ["3000:3000"]
+    ports: ["${WEB_PORT:-3000}:3000"]
     depends_on:
       api: { condition: service_healthy }
 volumes:

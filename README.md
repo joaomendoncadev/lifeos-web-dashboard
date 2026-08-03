@@ -37,7 +37,7 @@ Acessos:
 - Health: `http://localhost:8081/actuator/health`
 - Second Brain: `http://localhost:3000/brain`
 
-A porta externa da API pode ser alterada por `API_PORT` no `.env`.
+As portas externas podem ser alteradas no `.env` (`API_PORT`, `WEB_PORT` e `POSTGRES_PORT`) caso alguma já esteja em uso por outro projeto na sua máquina — as portas internas dos containers não mudam, então a comunicação entre eles continua funcionando normalmente.
 
 ## Desenvolvimento separado
 
