@@ -33,8 +33,8 @@ podman compose up --build
 Acessos:
 
 - Web: `http://localhost:3000`
-- API: `http://localhost:8081/api/v1`
-- Health: `http://localhost:8081/actuator/health`
+- API: `http://localhost:8082/api/v1`
+- Health: `http://localhost:8082/actuator/health`
 - Second Brain: `http://localhost:3000/brain`
 
 A porta externa da API pode ser alterada por `API_PORT` no `.env`.

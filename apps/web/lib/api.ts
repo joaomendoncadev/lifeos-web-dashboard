@@ -1,6 +1,6 @@
 import { ApiResult, Area, CalendarBlock, CalendarBlockInput, WeeklyCalendarSummary, DashboardSummary, DailyReview, FocusSession, Goal, GoalInput, Habit, HabitInput, Note, NoteInput, Project, ProjectInput, WorkspaceTemplate, Tag, Task, TaskInput, TaskStatus, WeeklyReview, Trip, TripInput, TripDetails, ItineraryItem, Reservation, TravelDocument, TripChecklistItem, TripExpense, TodayHub, SearchResponse, TimelineItem, WorkspaceInsights, CompactNote, IntelligenceOverview, WorkspaceHealth, WorkspaceDetail, WorkspaceChecklistItem, WorkspaceAttachment, RoutineDefinition, RoutineDefinitionInput, RoutineGenerationResult } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8082/api/v1";
 
 async function parse<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;

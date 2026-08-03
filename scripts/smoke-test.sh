@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 set -eu
-API_URL="${API_URL:-http://localhost:8081}"
+API_URL="${API_URL:-http://localhost:8082}"
 WEB_URL="${WEB_URL:-http://localhost:3000}"
 printf 'API health... '
 curl -fsS "$API_URL/actuator/health" | grep -q '"status":"UP"'
