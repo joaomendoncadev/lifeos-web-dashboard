@@ -18,7 +18,7 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lifeos}
       DATABASE_USER: ${POSTGRES_USER:-lifeos}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-lifeos}
-      CORS_ALLOWED_ORIGIN: http://localhost:3000
+      CORS_ALLOWED_ORIGIN: http://localhost:${WEB_PORT:-3000}
     ports: ["${API_PORT:-8081}:8080"]
     depends_on:
       postgres: { condition: service_healthy }
