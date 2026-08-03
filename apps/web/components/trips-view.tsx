@@ -9,6 +9,7 @@ import { SyncState } from "./sync-state";
 import { EntityDrawer } from "./entity-drawer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./toast-provider";
+import { Skeleton } from "./skeleton";
 
 const emptyTrip: TripInput={name:"",destination:"",startDate:null,endDate:null,status:"PLANNING",currency:"BRL",budget:0,notes:"",coverEmoji:"✈️"};
 const money=(value:number,currency:string)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency}).format(value||0);
@@ -20,8 +21,9 @@ export function TripsView(){
   const [selected,setSelected]=useState<string>(); const [details,setDetails]=useState<TripDetails>();
   const [form,setForm]=useState<TripInput>(emptyTrip); const [message,setMessage]=useState<string>(); const [tab,setTab]=useState("overview");
   const [drawerOpen,setDrawerOpen]=useState(false); const [editing,setEditing]=useState<string|null>(null); const [deleteTarget,setDeleteTarget]=useState<Trip|null>(null); const [saving,setSaving]=useState(false); const {notify}=useToast();
+  const [detailsLoading,setDetailsLoading]=useState(false);
   const activeId=selected??trips[0]?.id;
-  const loadDetails=useCallback(async(id:string)=>{try{setDetails((await lifeosApi.trip(id)).data);setMessage(undefined)}catch(e){setMessage(e instanceof Error?e.message:"Falha ao carregar viagem.")}},[]);
+  const loadDetails=useCallback(async(id:string)=>{setDetailsLoading(true);try{setDetails((await lifeosApi.trip(id)).data);setMessage(undefined)}catch(e){setMessage(e instanceof Error?e.message:"Falha ao carregar viagem.")}finally{setDetailsLoading(false)}},[]);
   useEffect(()=>{if(activeId)void loadDetails(activeId);else setDetails(undefined)},[activeId,loadDetails]);
 
   function openCreate(){setEditing(null);setForm(emptyTrip);setDrawerOpen(true)}
@@ -35,7 +37,7 @@ export function TripsView(){
     <div className="resource-header"><SyncState loading={loading} source={source} warning={warning} error={error} onRetry={reload}/><button className="primary-button" onClick={openCreate}><Plus size={16}/> Nova viagem</button></div>
     {message?<p className="inline-message">{message}</p>:null}
     <div className="travel-layout">
-      <aside className="trip-list panel">{trips.length===0?<p className="empty-copy">Nenhuma viagem criada.</p>:trips.map(t=><button key={t.id} className={`trip-list-item ${activeId===t.id?"active":""}`} onClick={()=>setSelected(t.id)}><span>{t.coverEmoji}</span><div><strong>{t.name}</strong><small><MapPin size={12}/>{t.destination}</small><small>{date(t.startDate)} — {date(t.endDate)}</small></div></button>)}</aside>
+      <aside className="trip-list panel">{loading?<TripListSkeleton/>:trips.length===0?<p className="empty-copy">Nenhuma viagem criada.</p>:trips.map(t=><button key={t.id} className={`trip-list-item ${activeId===t.id?"active":""}`} onClick={()=>setSelected(t.id)}><span>{t.coverEmoji}</span><div><strong>{t.name}</strong><small><MapPin size={12}/>{t.destination}</small><small>{date(t.startDate)} — {date(t.endDate)}</small></div></button>)}</aside>
       <section className="trip-workspace panel">{details?<>
         <header className="trip-hero"><div><span className="trip-emoji">{details.trip.coverEmoji}</span><p className="eyebrow small">{details.trip.status}</p><h2>{details.trip.name}</h2><p><MapPin size={15}/>{details.trip.destination} · {date(details.trip.startDate)} — {date(details.trip.endDate)}</p></div><div className="row-actions"><button className="icon-button ghost" onClick={()=>openEdit(details.trip)} title="Editar"><Pencil size={17}/></button><button className="icon-button ghost danger-icon" onClick={()=>setDeleteTarget(details.trip)} title="Excluir"><Trash2 size={17}/></button></div></header>
         <div className="trip-kpis"><div><span>Orçamento</span><strong>{money(details.trip.budget,details.trip.currency)}</strong></div><div><span>Gasto</span><strong>{money(details.trip.spent,details.trip.currency)}</strong></div><div><span>Disponível</span><strong>{money(details.trip.budget-details.trip.spent,details.trip.currency)}</strong></div><div><span>Checklist</span><strong>{progress}%</strong></div></div>
@@ -46,7 +48,7 @@ export function TripsView(){
         {tab==="documents"?<Documents details={details} refresh={refresh}/>:null}
         {tab==="checklist"?<Checklist details={details} refresh={refresh}/>:null}
         {tab==="expenses"?<Expenses details={details} refresh={refresh}/>:null}
-      </>:<div className="travel-empty"><Plane size={42}/><h3>Crie sua primeira viagem</h3><p>Todos os detalhes ficarão centralizados aqui.</p></div>}</section>
+      </>:detailsLoading?<TripDetailsSkeleton/>:<div className="travel-empty"><Plane size={42}/><h3>Crie sua primeira viagem</h3><p>Todos os detalhes ficarão centralizados aqui.</p></div>}</section>
     </div>
     <EntityDrawer open={drawerOpen} onClose={()=>setDrawerOpen(false)} eyebrow={editing?"Editar viagem":"Nova viagem"} title={editing?form.name||"Editar viagem":"Planeje sua próxima experiência"} footer={<><button className="secondary-button" onClick={()=>setDrawerOpen(false)}>Cancelar</button><button className="primary-button" form="trip-editor-form" disabled={saving}>{saving?"Salvando…":editing?"Salvar alterações":"Criar viagem"}</button></>}>
       <form id="trip-editor-form" className="entity-form" onSubmit={saveTrip}>
@@ -69,3 +71,11 @@ function Documents({details,refresh}:{details:TripDetails;refresh:()=>Promise<vo
 function Checklist({details,refresh}:{details:TripDetails;refresh:()=>Promise<void>}){const [f,setF]=useState({title:"",category:"Geral",completed:false});async function add(e:FormEvent){e.preventDefault();if(!f.title)return;await lifeosApi.addTripChecklist(details.trip.id,f);setF({...f,title:""});await refresh()}return <Module title="Checklist"><form className="travel-inline-form compact" onSubmit={add}><input placeholder="Item" value={f.title} onChange={e=>setF({...f,title:e.target.value})}/><select value={f.category} onChange={e=>setF({...f,category:e.target.value})}><option>Geral</option><option>Mala</option><option>Documentos</option><option>Compras</option><option>Antes de sair</option></select><button>Adicionar</button></form><div className="travel-rows">{details.checklist.map(i=><div className={i.completed?"done":""} key={i.id}><button className="travel-check" onClick={async()=>{await lifeosApi.toggleTripChecklist(details.trip.id,i.id);await refresh()}}>{i.completed?"✓":""}</button><strong>{i.category}</strong><span>{i.title}</span><button onClick={async()=>{await lifeosApi.deleteTripChecklist(details.trip.id,i.id);await refresh()}}><Trash2 size={14}/></button></div>)}</div></Module>}
 function Expenses({details,refresh}:{details:TripDetails;refresh:()=>Promise<void>}){const [f,setF]=useState({description:"",category:"Alimentação",amount:0,expenseDate:new Date().toISOString().slice(0,10),paid:true});const total=useMemo(()=>details.expenses.reduce((s,e)=>s+Number(e.amount),0),[details.expenses]);async function add(e:FormEvent){e.preventDefault();if(!f.description||f.amount<=0)return;await lifeosApi.addTripExpense(details.trip.id,f);setF({...f,description:"",amount:0});await refresh()}return <Module title={`Despesas · ${money(total,details.trip.currency)}`}><form className="travel-inline-form" onSubmit={add}><input placeholder="Descrição" value={f.description} onChange={e=>setF({...f,description:e.target.value})}/><select value={f.category} onChange={e=>setF({...f,category:e.target.value})}><option>Alimentação</option><option>Hospedagem</option><option>Transporte</option><option>Passeios</option><option>Compras</option><option>Outros</option></select><input type="number" min="0.01" step="0.01" value={f.amount} onChange={e=>setF({...f,amount:Number(e.target.value)})}/><input type="date" value={f.expenseDate} onChange={e=>setF({...f,expenseDate:e.target.value})}/><button>Adicionar</button></form><div className="travel-rows">{details.expenses.map(x=><div key={x.id}><CircleDollarSign size={17}/><strong>{x.category}</strong><span>{x.description} · {date(x.expenseDate)}</span><b>{money(x.amount,details.trip.currency)}</b><button onClick={async()=>{await lifeosApi.deleteTripExpense(details.trip.id,x.id);await refresh()}}><Trash2 size={14}/></button></div>)}</div></Module>}
 function Module({title,children}:{title:string;children:ReactNode}){return <section className="travel-module"><h3>{title}</h3>{children}</section>}
+
+function TripListSkeleton(){return <>{Array.from({length:3}).map((_,index)=><div className="trip-list-item" key={index} aria-hidden="true"><Skeleton width={25} height={25} radius="50%"/><div style={{display:"grid",gap:5,minWidth:0,flex:1}}><Skeleton width="75%" height={13}/><Skeleton width="55%" height={10}/></div></div>)}</>}
+
+function TripDetailsSkeleton(){return <div style={{padding:28}} aria-hidden="true">
+  <Skeleton width={140} height={30}/>
+  <Skeleton width="45%" height={14} style={{marginTop:14}}/>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginTop:26}}>{Array.from({length:4}).map((_,index)=><Skeleton key={index} height={50}/>)}</div>
+</div>}

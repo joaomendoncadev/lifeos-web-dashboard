@@ -7,6 +7,7 @@ import { Area, Note, NoteInput, Project } from "@/lib/types";
 import { SyncState } from "./sync-state";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./toast-provider";
+import { Skeleton } from "./skeleton";
 
 const empty: NoteInput = { title: "", content: "", areaId: null, projectId: null, tags: [], favorite: false, archived: false };
 
@@ -103,7 +104,11 @@ export function BrainView() {
       <label className="brain-search"><Search size={15}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar notas e tags"/></label>
       <SyncState loading={loading} source="api" error={error} onRetry={load}/>
       <div className="brain-note-list">
-        {notes.map((note) => <button className={`brain-note-item ${selected === note.id ? "active" : ""}`} onClick={() => select(note)} key={note.id}>
+        {loading ? Array.from({ length: 5 }).map((_, index) => <div className="brain-note-item" key={index} aria-hidden="true">
+          <div><Skeleton width={15} height={15} radius="4px"/><Skeleton width="55%" height={13}/></div>
+          <Skeleton width="90%" height={11} style={{ marginTop: 4 }}/>
+          <Skeleton width="40%" height={9} style={{ marginTop: 4 }}/>
+        </div>) : notes.map((note) => <button className={`brain-note-item ${selected === note.id ? "active" : ""}`} onClick={() => select(note)} key={note.id}>
           <div><FileText size={15}/><strong>{note.title}</strong>{note.favorite ? <Star size={13} fill="currentColor"/> : null}</div>
           <p>{note.content.slice(0, 90) || "Nota sem conteúdo"}</p>
           <span>{note.area?.name ?? "Sem área"} · {new Date(note.updatedAt).toLocaleDateString("pt-BR")}</span>

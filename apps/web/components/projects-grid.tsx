@@ -11,6 +11,7 @@ import { EntityDrawer } from "./entity-drawer";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useToast } from "./toast-provider";
 import { ProjectIcon, projectIconOptions } from "./project-icon";
+import { Skeleton } from "./skeleton";
 
 const emptyProject: ProjectInput = { name: "", area: "Pessoal", description: "", deadline: null, icon: "Rocket" };
 const emptyTask: TaskInput = { title: "", projectId: null, status: "Próxima", context: "Computador", priority: "Média", durationMinutes: 30, dueDate: null };
@@ -113,7 +114,7 @@ export function ProjectsGrid() {
         <div className="workspace-rail-header"><div><span className="eyebrow small">Workspaces</span><strong>Projetos</strong></div><button className="icon-button" onClick={() => openProject()} title="Novo workspace"><Plus size={17}/></button></div>
         <label className="workspace-search"><Search size={15}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar tarefas"/></label>
         <button className={`workspace-project inbox-project ${selectedId === null ? "selected" : ""}`} onClick={() => setSelectedId(null)} onDragOver={event => event.preventDefault()} onDrop={event => drop(event, null)}><span className="workspace-project-icon"><Inbox size={17}/></span><span><strong>Inbox</strong><small>{inboxTasks.length} tarefas sem projeto</small></span><ChevronRight size={15}/></button>
-        <div className="workspace-project-list">{projects.map(project => <button key={project.id} className={`workspace-project ${activeProjectId === project.id ? "selected" : ""}`} onClick={() => setSelectedId(project.id)} onDragOver={event => event.preventDefault()} onDrop={event => drop(event, project.id)}><span className="workspace-project-icon"><ProjectIcon name={project.icon}/></span><span><strong>{project.name}</strong><small>{tasks.filter(task => task.projectId === project.id && task.status !== "Concluída").length} abertas · {project.progress}%</small></span><ChevronRight size={15}/></button>)}</div>
+        <div className="workspace-project-list">{loading ? <WorkspaceRailSkeleton/> : projects.map(project => <button key={project.id} className={`workspace-project ${activeProjectId === project.id ? "selected" : ""}`} onClick={() => setSelectedId(project.id)} onDragOver={event => event.preventDefault()} onDrop={event => drop(event, project.id)}><span className="workspace-project-icon"><ProjectIcon name={project.icon}/></span><span><strong>{project.name}</strong><small>{tasks.filter(task => task.projectId === project.id && task.status !== "Concluída").length} abertas · {project.progress}%</small></span><ChevronRight size={15}/></button>)}</div>
       </aside>
 
       <main className="workspace-main panel">
@@ -136,6 +137,13 @@ export function ProjectsGrid() {
 
 function TaskCard({ task, onDragStart, onEdit, onToggle, onDelete }: { task: Task; onDragStart: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void }) {
   return <article className={`workspace-task-card ${task.status === "Concluída" ? "completed" : ""}`} draggable onDragStart={event => { event.dataTransfer.setData("text/task-id", task.id); event.dataTransfer.effectAllowed = "move"; onDragStart(); }} onDoubleClick={onEdit}><div className="workspace-task-top"><button className="task-check" onClick={onToggle}>{task.status === "Concluída" ? <Check size={14}/> : null}</button><button className="workspace-task-copy" onClick={onEdit}><strong>{task.title}</strong><span>{task.context} · {task.duration}</span></button><button className="icon-button ghost danger-icon workspace-task-delete" onClick={onDelete}><Trash2 size={14}/></button></div><footer><span className={`priority-dot priority-${task.priority.toLowerCase()}`}/><span>{task.priority}</span>{task.dueDate ? <span><CalendarDays size={12}/>{new Date(`${task.dueDate}T12:00:00`).toLocaleDateString("pt-BR")}</span> : null}</footer></article>;
+}
+
+function WorkspaceRailSkeleton() {
+  return <>{Array.from({ length: 3 }).map((_, index) => <div className="workspace-project" key={index} aria-hidden="true">
+    <Skeleton width={34} height={34} radius="9px"/>
+    <span style={{ display: "grid", gap: 4 }}><Skeleton width="70%" height={13}/><Skeleton width="40%" height={10}/></span>
+  </div>)}</>;
 }
 
 function InboxWorkspace({ tasks, projects, onDragStart, onEdit, onDelete, onCreate, onDrop }: { tasks: Task[]; projects: Project[]; onDragStart: (id:string)=>void; onEdit:(task?:Task,projectId?:string|null)=>void; onDelete:(task:Task)=>void; onCreate:()=>void; onDrop:(event:DragEvent)=>void }) {
