@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Brain, CalendarDays, CircleUserRound, Home, Inbox, LayoutGrid, Settings, Sun, CalendarRange } from "lucide-react";
+import { BarChart3, Brain, CalendarDays, Repeat2, CircleUserRound, Home, Inbox, LayoutGrid, Settings, Sun, CalendarRange } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,6 +15,7 @@ const system = [
   { label: "Workspaces", icon: LayoutGrid, href: "/workspaces" },
   { label: "Knowledge", icon: Brain, href: "/brain" },
   { label: "Calendar", icon: CalendarDays, href: "/agenda" },
+  { label: "Minha rotina", icon: Repeat2, href: "/routine" },
   { label: "Insights", icon: BarChart3, href: "/insights" },
   { label: "Configurações", icon: Settings, href: "/settings" },
 ];

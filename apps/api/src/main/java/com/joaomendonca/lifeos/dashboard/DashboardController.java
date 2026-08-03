@@ -1,5 +1,6 @@
 package com.joaomendonca.lifeos.dashboard;
 
+import com.joaomendonca.lifeos.agenda.CalendarBlockRepository;
 import com.joaomendonca.lifeos.habit.*;
 import com.joaomendonca.lifeos.focus.FocusSessionRepository;
 import com.joaomendonca.lifeos.workspace.WorkspaceRepository;
@@ -16,9 +17,10 @@ public class DashboardController {
   private final HabitRepository habits;
   private final HabitLogRepository logs;
   private final FocusSessionRepository focusSessions;
+  private final CalendarBlockRepository calendar;
 
-  public DashboardController(TaskRepository tasks, WorkspaceRepository workspaces, HabitRepository habits, HabitLogRepository logs, FocusSessionRepository focusSessions) {
-    this.tasks = tasks; this.workspaces = workspaces; this.habits = habits; this.logs = logs; this.focusSessions = focusSessions;
+  public DashboardController(TaskRepository tasks, WorkspaceRepository workspaces, HabitRepository habits, HabitLogRepository logs, FocusSessionRepository focusSessions, CalendarBlockRepository calendar) {
+    this.tasks = tasks; this.workspaces = workspaces; this.habits = habits; this.logs = logs; this.focusSessions = focusSessions; this.calendar = calendar;
   }
 
   record DashboardResponse(long openTasks, long completedTasks, long activeProjects, long habitsDone,
@@ -42,7 +44,11 @@ public class DashboardController {
     long dueToday = allTasks.stream().filter(t -> t.getStatus() != TaskStatus.DONE && today.equals(t.getDueDate())).count();
     var start = today.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
     var end = today.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
-    int focused = focusSessions.findByStartedAtBetween(start, end).stream().filter(f -> Boolean.TRUE.equals(f.getCompleted())).mapToInt(f -> f.getActualMinutes()).sum();
+    int focusedSessions = focusSessions.findByStartedAtBetween(start, end).stream().filter(f -> Boolean.TRUE.equals(f.getCompleted())).mapToInt(f -> f.getActualMinutes()).sum();
+    int focusedAgenda = calendar.findByStartAtGreaterThanEqualAndStartAtLessThanOrderByStartAtAsc(start, end).stream()
+        .filter(b -> Boolean.TRUE.equals(b.getCompleted()) && "FOCUS".equals(b.getBlockType()))
+        .mapToInt(b -> (int) java.time.Duration.between(b.getStartAt(), b.getEndAt()).toMinutes()).sum();
+    int focused = focusedSessions + focusedAgenda;
     return new DashboardResponse(tasks.countByStatusNot(TaskStatus.DONE), tasks.countByStatus(TaskStatus.DONE),
         workspaces.countByArchivedFalse(), habitDone, habitTotal, planned, overdue, dueToday, focused, priorities);
   }

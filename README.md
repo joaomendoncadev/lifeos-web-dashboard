@@ -1,4 +1,4 @@
-# LifeOS v1.4.0 — Stable UX
+# LifeOS v3.1.0 — Stable UX
 
 Sistema operacional pessoal local e de usuário único, construído com Next.js, Spring Boot e PostgreSQL. Esta versão não possui autenticação porque foi projetada para execução privada na máquina do proprietário.
 

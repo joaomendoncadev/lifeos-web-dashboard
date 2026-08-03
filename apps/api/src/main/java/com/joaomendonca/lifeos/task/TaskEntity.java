@@ -25,6 +25,8 @@ public class TaskEntity {
   private Integer durationMinutes = 30;
   private String priority = "Média";
   private LocalDate dueDate;
+  @Column(nullable = false)
+  private Boolean convertedToAgenda = false;
   @Column(nullable = false, updatable = false)
   private Instant createdAt = Instant.now();
   @Column(nullable = false)

@@ -133,6 +133,8 @@ export type DailyReview = {
 };
 
 export type CalendarBlockType = "FOCUS" | "MEETING" | "PERSONAL" | "ROUTINE" | "BREAK";
+export type CalendarLifecycleStatus = "PLANNED" | "DONE" | "CANCELLED";
+export type CalendarDomain = "WORK" | "HEALTH" | "STUDY" | "PERSONAL";
 
 export type CalendarBlock = {
   id: string;
@@ -144,9 +146,19 @@ export type CalendarBlock = {
   taskId?: string | null;
   projectId?: string | null;
   completed: boolean;
+  lifecycleStatus: CalendarLifecycleStatus;
+  domain: CalendarDomain;
 };
 
 export type CalendarBlockInput = Omit<CalendarBlock, "id">;
+export type WeeklyCalendarSummary = { workMinutes:number; healthMinutes:number; studyMinutes:number; personalMinutes:number; plannedMinutes:number; doneMinutes:number; cancelledMinutes:number };
+export type RoutineDefinition = {
+  id:string; code:string; title:string; description:string; blockType:CalendarBlockType; domain:CalendarDomain;
+  daysOfWeek:number[]; startTime:string; endTime:string; active:boolean; sortOrder:number;
+};
+export type RoutineDefinitionInput = Omit<RoutineDefinition,"id"|"code">;
+export type RoutineGenerationResult = { created:number; weekStart:string; weekEnd:string };
+
 
 export type WeeklyReview = {
   id?: string | null;

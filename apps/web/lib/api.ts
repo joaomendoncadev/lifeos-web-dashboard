@@ -1,4 +1,4 @@
-import { ApiResult, Area, CalendarBlock, CalendarBlockInput, DashboardSummary, DailyReview, FocusSession, Goal, GoalInput, Habit, HabitInput, Note, NoteInput, Project, ProjectInput, WorkspaceTemplate, Tag, Task, TaskInput, TaskStatus, WeeklyReview, Trip, TripInput, TripDetails, ItineraryItem, Reservation, TravelDocument, TripChecklistItem, TripExpense, TodayHub, SearchResponse, TimelineItem, WorkspaceInsights, CompactNote, IntelligenceOverview, WorkspaceHealth, WorkspaceDetail, WorkspaceChecklistItem, WorkspaceAttachment } from "./types";
+import { ApiResult, Area, CalendarBlock, CalendarBlockInput, WeeklyCalendarSummary, DashboardSummary, DailyReview, FocusSession, Goal, GoalInput, Habit, HabitInput, Note, NoteInput, Project, ProjectInput, WorkspaceTemplate, Tag, Task, TaskInput, TaskStatus, WeeklyReview, Trip, TripInput, TripDetails, ItineraryItem, Reservation, TravelDocument, TripChecklistItem, TripExpense, TodayHub, SearchResponse, TimelineItem, WorkspaceInsights, CompactNote, IntelligenceOverview, WorkspaceHealth, WorkspaceDetail, WorkspaceChecklistItem, WorkspaceAttachment, RoutineDefinition, RoutineDefinitionInput, RoutineGenerationResult } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081/api/v1";
 
@@ -69,8 +69,16 @@ export const lifeosApi = {
   reviewToday: () => result(fetch(`${API_URL}/reviews/today`, { cache: "no-store" }).then((r) => parse<DailyReview | null>(r))),
   saveReviewToday: (input: DailyReview) => result(fetch(`${API_URL}/reviews/today`, { method: "PUT", headers: json, body: JSON.stringify(input) }).then((r) => parse<DailyReview>(r))),
   logHabit: (habitId: string, done: boolean) => fetch(`${API_URL}/habits/${habitId}/check-in`, { method: "POST", headers: json, body: JSON.stringify({ done }) }).then((r) => parse<{ ok: true }>(r)),
+  routineDefinitions: () => result(fetch(`${API_URL}/routines`, { cache: "no-store" }).then((r) => parse<RoutineDefinition[]>(r))),
+  createRoutineDefinition: (input: RoutineDefinitionInput) => result(fetch(`${API_URL}/routines`, { method:"POST", headers:json, body:JSON.stringify(input) }).then((r) => parse<RoutineDefinition>(r))),
+  updateRoutineDefinition: (id:string,input:RoutineDefinitionInput) => result(fetch(`${API_URL}/routines/${id}`, { method:"PUT", headers:json, body:JSON.stringify(input) }).then((r) => parse<RoutineDefinition>(r))),
+  deleteRoutineDefinition: (id:string) => fetch(`${API_URL}/routines/${id}`, { method:"DELETE" }).then((r) => parse<void>(r)),
+  generateRoutineWeek: (weekStart:string) => result(fetch(`${API_URL}/routines/generate-week?weekStart=${encodeURIComponent(weekStart)}`, { method:"POST" }).then((r) => parse<RoutineGenerationResult>(r))),
   calendarBlocks: (from: string, to: string) => result(fetch(`${API_URL}/calendar-blocks?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { cache: "no-store" }).then((r) => parse<CalendarBlock[]>(r))),
+  calendarWeeklySummary: (from: string, to: string) => result(fetch(`${API_URL}/calendar-blocks/weekly-summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { cache: "no-store" }).then((r) => parse<WeeklyCalendarSummary>(r))),
   createCalendarBlock: (input: CalendarBlockInput) => result(fetch(`${API_URL}/calendar-blocks`, { method: "POST", headers: json, body: JSON.stringify(input) }).then((r) => parse<CalendarBlock>(r))),
+  scheduleInboxTask: (taskId: string, startAt: string, endAt: string) => result(fetch(`${API_URL}/calendar-blocks/from-inbox/${taskId}`, { method: "POST", headers: json, body: JSON.stringify({ startAt, endAt }) }).then((r) => parse<CalendarBlock>(r))),
+  returnCalendarBlockToInbox: (id: string) => result(fetch(`${API_URL}/calendar-blocks/${id}/return-to-inbox`, { method: "POST" }).then((r) => parse<Task>(r))),
   updateCalendarBlock: (id: string, input: CalendarBlockInput) => result(fetch(`${API_URL}/calendar-blocks/${id}`, { method: "PUT", headers: json, body: JSON.stringify(input) }).then((r) => parse<CalendarBlock>(r))),
   completeCalendarBlock: (id: string, completed: boolean) => result(fetch(`${API_URL}/calendar-blocks/${id}/complete`, { method: "PATCH", headers: json, body: JSON.stringify({ completed }) }).then((r) => parse<CalendarBlock>(r))),
   deleteCalendarBlock: (id: string) => fetch(`${API_URL}/calendar-blocks/${id}`, { method: "DELETE" }).then((r) => parse<void>(r)),

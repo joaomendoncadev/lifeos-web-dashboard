@@ -2,8 +2,10 @@ package com.joaomendonca.lifeos.productivity;
 import com.joaomendonca.lifeos.agenda.*;
 import com.joaomendonca.lifeos.brain.*;
 import com.joaomendonca.lifeos.focus.*;
+import com.joaomendonca.lifeos.goal.*;
 import com.joaomendonca.lifeos.habit.*;
 import com.joaomendonca.lifeos.task.*;
+import com.joaomendonca.lifeos.travel.*;
 import com.joaomendonca.lifeos.workspace.*;
 import java.time.*;
 import java.util.*;
@@ -14,8 +16,9 @@ import org.springframework.web.bind.annotation.*;
 public class ProductivityController {
  private final TaskRepository tasks; private final WorkspaceRepository workspaces; private final NoteRepository notes;
  private final CalendarBlockRepository calendar; private final HabitRepository habits; private final FocusSessionRepository focus;
+ private final GoalRepository goals; private final TripRepository trips; private final WorkspaceAttachmentRepository attachments;
  private final ActivityEventRepository events; private final NoteLinkRepository links;
- public ProductivityController(TaskRepository tasks, WorkspaceRepository workspaces, NoteRepository notes, CalendarBlockRepository calendar, HabitRepository habits, FocusSessionRepository focus, ActivityEventRepository events, NoteLinkRepository links){this.tasks=tasks;this.workspaces=workspaces;this.notes=notes;this.calendar=calendar;this.habits=habits;this.focus=focus;this.events=events;this.links=links;}
+ public ProductivityController(TaskRepository tasks, WorkspaceRepository workspaces, NoteRepository notes, CalendarBlockRepository calendar, HabitRepository habits, FocusSessionRepository focus, GoalRepository goals, TripRepository trips, WorkspaceAttachmentRepository attachments, ActivityEventRepository events, NoteLinkRepository links){this.tasks=tasks;this.workspaces=workspaces;this.notes=notes;this.calendar=calendar;this.habits=habits;this.focus=focus;this.goals=goals;this.trips=trips;this.attachments=attachments;this.events=events;this.links=links;}
  record CompactTask(String id,String title,String workspaceId,String workspace,String priority,LocalDate dueDate,String status){}
  record CompactNote(String id,String title,String workspaceId,String workspace,String excerpt,OffsetDateTime updatedAt){}
  record CompactWorkspace(String id,String name,String type,String icon,int progress,long openTasks,long overdueTasks){}
@@ -32,7 +35,9 @@ public class ProductivityController {
   var today=all.stream().filter(t->t.getStatus()!=TaskStatus.DONE&&d.equals(t.getDueDate())).map(this::task).toList();
   var blocks=calendar.findByStartAtGreaterThanEqualAndStartAtLessThanOrderByStartAtAsc(start,end).stream().map(b->{Map<String,Object> m=new LinkedHashMap<>();m.put("id",b.getId().toString());m.put("title",b.getTitle());m.put("startAt",b.getStartAt());m.put("endAt",b.getEndAt());m.put("type",b.getBlockType());m.put("completed",b.getCompleted());return m;}).toList();
   var habitList=habits.findByActiveTrueOrderByNameAsc().stream().map(h->{Map<String,Object> m=new LinkedHashMap<>();m.put("id",h.getId().toString());m.put("name",h.getName());m.put("icon",h.getIcon());m.put("frequency",h.getFrequency());return m;}).toList();
-  int minutes=focus.findByStartedAtBetween(start,end).stream().filter(f->Boolean.TRUE.equals(f.getCompleted())).mapToInt(f->Optional.ofNullable(f.getActualMinutes()).orElse(0)).sum();
+  int sessionMinutes=focus.findByStartedAtBetween(start,end).stream().filter(f->Boolean.TRUE.equals(f.getCompleted())).mapToInt(f->Optional.ofNullable(f.getActualMinutes()).orElse(0)).sum();
+  int agendaMinutes=calendar.findByStartAtGreaterThanEqualAndStartAtLessThanOrderByStartAtAsc(start,end).stream().filter(b->Boolean.TRUE.equals(b.getCompleted())&&"FOCUS".equals(b.getBlockType())).mapToInt(b->(int)Duration.between(b.getStartAt(),b.getEndAt()).toMinutes()).sum();
+  int minutes=sessionMinutes+agendaMinutes;
   var ws=workspaces.findAllByArchivedFalseOrderByUpdatedAtDesc().stream().limit(5).map(this::workspace).toList();
   var recent=notes.search("",false).stream().limit(5).map(this::note).toList();
   return new TodayResponse(d,overdue.size(),today.size(),minutes,overdue,today,blocks,habitList,ws,recent);
@@ -43,14 +48,24 @@ public class ProductivityController {
   workspaces.findAllByArchivedFalseOrderByUpdatedAtDesc().stream().filter(w->contains(w.getName(),needle)||contains(w.getDescription(),needle)).limit(8).forEach(w->result.add(new SearchItem(w.getId().toString(),"WORKSPACE",w.getName(),w.getType().name(),"/workspaces?workspace="+w.getId())));
   tasks.findAllByOrderByCreatedAtDesc().stream().filter(t->contains(t.getTitle(),needle)||contains(t.getContext(),needle)).limit(10).forEach(t->result.add(new SearchItem(t.getId().toString(),"TASK",t.getTitle(),t.getProjectName(),t.getDueDate()==null?"/inbox":"/today")));
   notes.search(query,false).stream().limit(10).forEach(n->result.add(new SearchItem(n.getId().toString(),"NOTE",n.getTitle(),n.getWorkspace()==null?"Knowledge":n.getWorkspace().getName(),"/brain?note="+n.getId())));
-  return new SearchResponse(query,result.stream().limit(24).toList());
+  goals.findByActiveTrueOrderByDeadlineAsc().stream().filter(g->contains(g.getTitle(),needle)||contains(g.getDescription(),needle)||contains(g.getArea(),needle)).limit(6).forEach(g->result.add(new SearchItem(g.getId().toString(),"GOAL",g.getTitle(),g.getArea(),"/goals")));
+  habits.findByActiveTrueOrderByNameAsc().stream().filter(h->contains(h.getName(),needle)||contains(h.getDescription(),needle)||contains(h.getFrequency(),needle)).limit(6).forEach(h->result.add(new SearchItem(h.getId().toString(),"HABIT",h.getName(),h.getFrequency(),"/habits")));
+  trips.findAllByOrderByStartDateAscCreatedAtDesc().stream().filter(t->contains(t.getName(),needle)||contains(t.getDestination(),needle)||contains(t.getNotes(),needle)).limit(6).forEach(t->result.add(new SearchItem(t.getId().toString(),"TRIP",t.getName(),t.getDestination(),"/trips")));
+  calendar.findAll().stream().filter(b->contains(b.getTitle(),needle)||contains(b.getDescription(),needle)||contains(b.getBlockType(),needle)).limit(6).forEach(b->result.add(new SearchItem(b.getId().toString(),"EVENT",b.getTitle(),b.getBlockType(),"/agenda")));
+  attachments.findAll().stream().filter(a->contains(a.getName(),needle)||contains(a.getUrl(),needle)||contains(a.getContentType(),needle)).limit(6).forEach(a->result.add(new SearchItem(a.getId().toString(),"FILE",a.getName(),a.getWorkspace().getName(),"/workspaces/"+a.getWorkspace().getId())));
+  return new SearchResponse(query,result.stream().limit(40).toList());
  }
 
  @GetMapping("/workspaces/{id}/timeline") @Transactional(readOnly=true) List<TimelineItem> timeline(@PathVariable UUID id){return events.findAllByWorkspaceIdOrderByCreatedAtDesc(id).stream().limit(100).map(e->new TimelineItem(e.getId().toString(),e.getEntityType(),e.getAction(),e.getDescription(),e.getCreatedAt())).toList();}
  @GetMapping("/workspaces/{id}/insights") @Transactional(readOnly=true) WorkspaceInsights insights(@PathVariable UUID id){
   long total=tasks.countByWorkspaceId(id),done=tasks.countByWorkspaceIdAndStatus(id,TaskStatus.DONE),open=total-done,overdue=tasks.countOverdueByWorkspace(id,LocalDate.now());
   int progress=total==0?0:(int)Math.round(done*100d/total); long noteCount=notes.countByWorkspaceId(id); long recent=events.countByWorkspaceIdAndCreatedAtAfter(id,OffsetDateTime.now().minusDays(7));
-  return new WorkspaceInsights(total,done,open,overdue,progress,0,noteCount,recent);
+  Instant from=LocalDate.now().minusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  Instant to=LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  int workspaceFocus=calendar.findByStartAtGreaterThanEqualAndStartAtLessThanOrderByStartAtAsc(from,to).stream()
+      .filter(b->id.equals(b.getProjectId())&&Boolean.TRUE.equals(b.getCompleted())&&"FOCUS".equals(b.getBlockType()))
+      .mapToInt(b->(int)Duration.between(b.getStartAt(),b.getEndAt()).toMinutes()).sum();
+  return new WorkspaceInsights(total,done,open,overdue,progress,workspaceFocus,noteCount,recent);
  }
  @GetMapping("/notes/{id}/backlinks") @Transactional(readOnly=true) List<CompactNote> backlinks(@PathVariable UUID id){return links.findAllByTargetIdOrderByCreatedAtDesc(id).stream().map(l->note(l.getSource())).toList();}
  @GetMapping("/notes/{id}/links") @Transactional(readOnly=true) List<CompactNote> outgoing(@PathVariable UUID id){return links.findAllBySourceIdOrderByCreatedAtDesc(id).stream().map(l->note(l.getTarget())).toList();}

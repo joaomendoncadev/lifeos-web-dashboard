@@ -6,6 +6,7 @@ import { lifeosApi } from "@/lib/api";
 import { TodayHub as TodayHubType } from "@/lib/types";
 import { PageHeader } from "./page-header";
 import { ProjectIcon } from "./project-icon";
+import { HabitIcon } from "./habit-icon";
 import { useToast } from "./toast-provider";
 
 export function TodayHub(){
@@ -30,7 +31,7 @@ export function TodayHub(){
    </div>
    <aside className="hub-secondary">
     <section className="panel hub-section compact"><header><div><CalendarDays/><span><b>Agenda</b><small>Blocos do seu dia.</small></span></div><Link href="/agenda"><ArrowRight size={15}/></Link></header><div className="hub-agenda">{data.agenda.map(e=><div key={e.id}><time>{new Date(e.startAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</time><span><strong>{e.title}</strong><small>{e.type}</small></span></div>)}{!data.agenda.length?<p>Nenhum bloco agendado.</p>:null}</div></section>
-    <section className="panel hub-section compact"><header><div><Flame/><span><b>Hábitos</b><small>Consistência antes de intensidade.</small></span></div><Link href="/habits"><ArrowRight size={15}/></Link></header><div className="hub-habits">{data.habits.slice(0,6).map(h=><div key={h.id}><span>{h.icon||"○"}</span><strong>{h.name}</strong><small>{h.frequency}</small></div>)}</div></section>
+    <section className="panel hub-section compact"><header><div><Flame/><span><b>Hábitos</b><small>Consistência antes de intensidade.</small></span></div><Link href="/habits"><ArrowRight size={15}/></Link></header><div className="hub-habits">{data.habits.slice(0,6).map(h=><div key={h.id}><span className="hub-habit-icon" aria-hidden="true"><HabitIcon name={h.icon} size={17}/></span><strong title={h.name}>{h.name}</strong><small>{h.frequency}</small></div>)}</div></section>
     <section className="panel hub-section compact"><header><div><Brain/><span><b>Notas recentes</b><small>Continue de onde parou.</small></span></div><Link href="/brain"><ArrowRight size={15}/></Link></header><div className="hub-notes">{data.notes.map(n=><Link href={`/brain?note=${n.id}`} key={n.id}><strong>{n.title}</strong><span>{n.workspace}</span><p>{n.excerpt||"Nota sem conteúdo"}</p></Link>)}</div></section>
    </aside>
   </section></>:null}

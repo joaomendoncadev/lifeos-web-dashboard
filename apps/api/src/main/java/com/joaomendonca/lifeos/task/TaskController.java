@@ -33,13 +33,13 @@ public class TaskController {
       @Size(max = 30) String priority,
       LocalDate dueDate) {}
   record UpdateStatusRequest(@NotBlank String status) {}
-  record TaskResponse(String id, String title, String projectId, String project, String context,
+  public record TaskResponse(String id, String title, String projectId, String project, String context,
                       String duration, int durationMinutes, String status, String priority, LocalDate dueDate) {}
 
   @GetMapping
   @Transactional(readOnly = true)
   List<TaskResponse> list() {
-    return tasks.findAllByOrderByCreatedAtDesc().stream().map(this::map).toList();
+    return tasks.findAllByOrderByCreatedAtDesc().stream().filter(task->!Boolean.TRUE.equals(task.getConvertedToAgenda())).map(this::map).toList();
   }
 
   @PostMapping
