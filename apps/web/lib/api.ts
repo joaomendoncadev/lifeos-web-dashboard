@@ -1,6 +1,12 @@
 import { ApiResult, Area, CalendarBlock, CalendarBlockInput, DashboardSummary, DailyReview, FocusSession, Goal, GoalInput, Habit, HabitInput, Note, NoteInput, Project, ProjectInput, WorkspaceTemplate, Tag, Task, TaskInput, TaskStatus, WeeklyReview, Trip, TripInput, TripDetails, ItineraryItem, Reservation, TravelDocument, TripChecklistItem, TripExpense, TodayHub, SearchResponse, TimelineItem, WorkspaceInsights, CompactNote, IntelligenceOverview, WorkspaceHealth, WorkspaceDetail, WorkspaceChecklistItem, WorkspaceAttachment } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081/api/v1";
+// Resolvida no navegador a partir do host usado para acessar a página, em vez de fixa
+// em "localhost" — assim o mesmo build funciona local, na rede local ou via Tailscale,
+// sem precisar saber de antemão qual endereço vai ser usado para abrir o app.
+const API_PORT = process.env.NEXT_PUBLIC_API_PORT ?? "8081";
+const API_URL = typeof window !== "undefined"
+  ? `${window.location.protocol}//${window.location.hostname}:${API_PORT}/api/v1`
+  : `http://localhost:${API_PORT}/api/v1`;
 
 async function parse<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;

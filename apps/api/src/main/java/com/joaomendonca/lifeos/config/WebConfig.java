@@ -5,6 +5,13 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-  @Value("${lifeos.cors.allowed-origin:http://localhost:3000}") private String allowedOrigin;
-  @Override public void addCorsMappings(CorsRegistry registry) { registry.addMapping("/api/**").allowedOrigins(allowedOrigin).allowedMethods("GET","POST","PATCH","PUT","DELETE","OPTIONS"); }
+  @Value("${lifeos.cors.allowed-origin:*}") private String allowedOrigin;
+  @Override public void addCorsMappings(CorsRegistry registry) {
+    var mapping = registry.addMapping("/api/**").allowedMethods("GET","POST","PATCH","PUT","DELETE","OPTIONS");
+    if ("*".equals(allowedOrigin)) {
+      mapping.allowedOriginPatterns("*");
+    } else {
+      mapping.allowedOrigins(allowedOrigin);
+    }
+  }
 }
